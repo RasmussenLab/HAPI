@@ -36,7 +36,7 @@ def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_
     other_list = []
 
     ref_list, alt_list = [], []
-    if baq == "no":
+    if baq == False:
         for pileupcolumn in bamvsref_file.pileup(chrom, coordinate - 1, coordinate, truncate=True,
                                                  min_base_quality=min_base_quality,
                                                  adjust_capq_threshold=adjustment_threshold,
@@ -44,9 +44,7 @@ def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_
             reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt)
 
             
-
-
-    elif baq == "yes":
+    elif baq == True:
         for pileupcolumn in bamvsref_file.pileup(chrom, coordinate - 1, coordinate, truncate=True, stepper="samtools",
                                                  fastafile=fasta_ref, compute_baq=True,
                                                  min_base_quality=min_base_quality,
@@ -54,6 +52,8 @@ def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_
                                                  min_mapping_quality=min_mapping_quality):
 
             reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt)
+    else:
+        raise ValueError('baq-snps parameter selected neither True nor False')
 
     return reads_list, other_list, ref_list, alt_list
 
@@ -200,7 +200,7 @@ def coverage_dict(dict_snps_cov, reads_list, id, other_list, ref_list, alt_list)
 
 ############## Part B FUNCTIONS DECLARATION ##############
 
-def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_mapping_all, length_threshold, ol_threshold, sample, baq,  min_base_quality=30, min_mapping_quality=30):
+def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_mapping_all, length_threshold, ol_threshold, sample, fasta_fake, fasta_ref, baq,  min_base_quality=30, min_mapping_quality=30):
     """
     Function to calculate the minimum length that a read overlaps the:
     - Starting and Ending position of the 32deletion in the bam aligned against the reference genome GRCh37
@@ -234,20 +234,23 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_map
 
             # For each of the S and E
             for pos in start_end:
-                if baq == "no":
+                if baq == False:
                     for pileupcolumn in bam_file.pileup(chrom, pos - 1, pos, truncate=True,
                                                         min_base_quality=min_base_quality,
                                                         adjust_capq_threshold=adjustment_threshold,
                                                         min_mapping_quality=min_mapping_quality):
                         reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
 
-                elif baq == "yes":
+                elif baq == True:
                     for pileupcolumn in bam_file.pileup(chrom, pos - 1, pos, truncate=True, stepper="samtools",
                                                         fastafile=fasta_ref, compute_baq=True,
                                                         min_base_quality=min_base_quality,
                                                         adjust_capq_threshold=adjustment_threshold,
                                                         min_mapping_quality=min_mapping_quality):
                         reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
+                
+                else:
+                    raise ValueError('baq-deletion parameter selected neither True nor False')
 
         return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict
 

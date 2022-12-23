@@ -60,13 +60,13 @@ def main():
     # Get script arguments
     parser = create_parser()
     args = parser.parse_args()
-
+    
     # I write the header of the output file
-    results_filename = re.search("[\w\d]+$", args.output_folder).group() + ".tsv"
+#     results_filename = re.search("[\w\d]+$", str(args.output_folder)).group() + ".tsv"
+#     results_filepath = args.output_folder / results_filename
 
-    results_filepath = args.output_folder + "/" + results_filename
-
-    outdir = args.output_folder + "/prob_dfs/"
+    results_filepath = args.output_folder / "results.tsv"
+    outdir = args.output_folder / "prob_dfs/"
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -75,8 +75,8 @@ def main():
 
 
     # Open the samples 
-    samples_list = samples_to_list(args.samples)
-
+#     samples_list = samples_to_list(args.samples)
+    samples_list = args.samples_file.read().splitlines()
 
     # Initialize empty dataframe
     df_mapping_all = pd.DataFrame(dtype=float, columns = ["sample", "read_name", "reference_start", "reference_end", "read_sequence", "read_length", "min_over", "n_mismatches", "alignment"])
@@ -89,9 +89,9 @@ def main():
     df_reads_del = pd.DataFrame(dtype=float, columns = ["sample", "read_name", "class"])
 
     # If --haplotype option is activated --> write a table to file containing the reporting of all the 86 SNPs
-    if args.haplotype:
+    if args.haplotype_file:
 
-        haplotype_list = snp_haplo_list(args.haplotype)
+        haplotype_list = snp_haplo_list(args.haplotype_file)
 
         # e.g. [['rs58697594', '46275570', 'G', 'A', '0.8602'], ['rs73833032', '46276490', 'T', 'C', '0.8602']]
         # Need to convert this list of lists in another list of just the column names with the format
@@ -118,13 +118,13 @@ def main():
         print(sample)
 
         # I parse the arguments given when executing the script
-        bamvsref, bamvsdel, fasta_ref, fasta_fake, snp_file, haplotype_file, baq_snp, baq_deletion, length_threshold, ol_threshold, perfect_match, adjustment_threshold = open_files_args(args, sample)
+        bamvsref, bamvsdel, fasta_ref, fasta_fake = open_files_args(args, sample)
 
 
         ############## Part 0: If --haplotype option is activated --> write a table to file containing the reporting of all the 86 SNPs
-        if args.haplotype:
+        if args.haplotype_file:
 
-            haplotype_list = snp_haplo_list(haplotype_file)
+            haplotype_list = snp_haplo_list(args.haplotype_file)
             # I report all the SNPs called of the haplotype
             haplotype_df, ref_haplo_count_df = some_function(haplotype_list, haplotype_df, ref_haplo_count_df)
 
@@ -134,11 +134,11 @@ def main():
         # 1 - Extract SNPs from file
         # List of lists containing the 4 SNPs of the CEU rs333 haplotype with coordinates and R squared value to the rs333
         # e.g. [['rs58697594', '46275570', 'G', 'A', '0.8602'], ['rs73833032', '46276490', 'T', 'C', '0.8602']]
-        snp_list = snp_haplo_list(snp_file)
+        snp_list = snp_haplo_list(args.snps_file)
 
 
         # 2 - Calculate Posterior probability of each SNP given each possible Genotype
-        prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov = calc_snps_posteriors(snp_list, bamvsref, baq_snp, adjustment_threshold, length_threshold)
+        prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov = calc_snps_posteriors(snp_list, bamvsref, args.baq_snps, args.adjustment_threshold, args.length_threshold)
 
 
 
@@ -173,8 +173,8 @@ def main():
 
         # 2 - Calculation of the minimum overlapping lengths of the reads
         # In the dataframe df_mapping_all I put all the reads mapping, so both those that map vs reference and those that map vs collapsed
-        reads_dict_ref, lengths_dict_ref, df_mapping_all, nm_tags_dict_ref = minimum_overlap(bamvsref, "3", position_list_reference, adjustment_threshold, df_mapping_all, length_threshold, ol_threshold, sample, baq = baq_deletion)
-        reads_dict_del, lengths_dict_del, df_mapping_all, nm_tags_dict_del = minimum_overlap(bamvsdel, "3", position_list_deletion, adjustment_threshold, df_mapping_all, length_threshold, ol_threshold, sample, baq = baq_deletion)
+        reads_dict_ref, lengths_dict_ref, df_mapping_all, nm_tags_dict_ref = minimum_overlap(bamvsref, "3", position_list_reference, args.adjustment_threshold, df_mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion)
+        reads_dict_del, lengths_dict_del, df_mapping_all, nm_tags_dict_del = minimum_overlap(bamvsdel, "3", position_list_deletion, args.adjustment_threshold, df_mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion)
 
         # 3 - Average of the overlapping lengths of all the 4 coordinates couples in the bam vs GRCh37
         reads_dict_ref = average_minimum_overlap(reads_dict_ref)
@@ -241,7 +241,7 @@ def main():
 
         # 4 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 
-        if perfect_match == "yes":
+        if args.perfect_match == "yes":
             reads_dict_ref = tag_filtering(bamvsref, reads_dict_ref, lengths_dict_ref)
             reads_dict_del = tag_filtering(bamvsdel, reads_dict_del, lengths_dict_del)
 
@@ -323,16 +323,16 @@ def main():
 
 
     # I need to average the overlapping lengths of the ref
-    df_mapping_all.to_csv(args.output_folder + "/all_reads_mapping.tsv", sep="\t", quoting=csv.QUOTE_NONE, index = False)
+    df_mapping_all.to_csv(args.output_folder / "all_reads_mapping.tsv", sep="\t", quoting=csv.QUOTE_NONE, index = False)
 
 
-    df_reads_ref.to_csv(args.output_folder + "/reads_assigned_ref.tsv", sep="\t", quoting=csv.QUOTE_NONE, index = False)
-    df_reads_del.to_csv(args.output_folder + "/reads_assigned_del.tsv", sep="\t", quoting=csv.QUOTE_NONE, index = False)
+    df_reads_ref.to_csv(args.output_folder / "reads_assigned_ref.tsv", sep="\t", quoting=csv.QUOTE_NONE, index = False)
+    df_reads_del.to_csv(args.output_folder / "reads_assigned_del.tsv", sep="\t", quoting=csv.QUOTE_NONE, index = False)
 
 
-    if args.haplotype:
-        haplotype_df.to_csv(args.output_folder + "/SNPS_reporting.tsv", sep = "\t", quoting=csv.QUOTE_NONE, index = False)
-        ref_haplo_count_df.to_csv(args.output_folder + "/ref_haplo_counts.tsv", sep = "\t", quoting=csv.QUOTE_NONE, index = False)
+    if args.haplotype_file:
+        haplotype_df.to_csv(args.output_folder / "SNPS_reporting.tsv", sep = "\t", quoting=csv.QUOTE_NONE, index = False)
+        ref_haplo_count_df.to_csv(args.output_folder / "ref_haplo_counts.tsv", sep = "\t", quoting=csv.QUOTE_NONE, index = False)
     end = time()
     length = end - start
     print("Time:", length)
