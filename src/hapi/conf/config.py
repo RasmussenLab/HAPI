@@ -36,7 +36,7 @@ def create_parser():
 
     parser.add_argument("--length-threshold", type=int, required=True)
     parser.add_argument("--overlapping_length_threshold", type=int, default=4, help="overlapping length threshold")
-    parser.add_argument("--perfect-match", required=True)
+    parser.add_argument("--perfect-match",  type=parse_bool, required=True)
     parser.add_argument("--adjustment-threshold", type=int, required=True)
     # baq_snp = "no"
     # baq_deletion = "no"
