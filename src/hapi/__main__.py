@@ -61,13 +61,9 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
     
-    # I write the header of the output file
-#     results_filename = re.search("[\w\d]+$", str(args.output_folder)).group() + ".tsv"
-#     results_filepath = args.output_folder / results_filename
-
+    # Output folder
     results_filepath = args.output_folder / "results.tsv"
     outdir = args.output_folder / "prob_dfs/"
-
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
