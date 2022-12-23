@@ -1,65 +1,38 @@
 import pysam
 from collections import OrderedDict
+from pathlib import Path
 
 ############## FILES OPENING FUNCTION DECLARATION ##############
 
-def samples_to_list(samples):
-    with open(samples, "r") as samples_file:
-        samples_list = samples_file.read().splitlines()
+# def samples_to_list(samples_file):
+    
+#     samples_list = samples_file.read().splitlines()
 
-    return samples_list
+#     return samples_list
 
 
 # TODO: change to regex to create a string containing the sample and then everything that is afterwards, but needs to end with cram or bam
 def open_files_args(args, sample):
-    bamvsref_file = str(args.folder_ref) + "/" + sample + str(args.files_extension)
 
-    bamvsdel_file = str(args.folder_fake) + "/" + sample + str(args.files_extension)
+    bamvsref_path = Path.joinpath(args.folder_ref, sample + args.files_extension)
+
+    bamvsdel_path = Path.joinpath(args.folder_fake, sample + args.files_extension)
 
     # Loading the bam file aligned vs the reference GRCh37 genome
-    bamvsref = pysam.AlignmentFile(bamvsref_file, "rc", reference_filename = str(args.fasta_ref))
+    bamvsref = pysam.AlignmentFile(bamvsref_path, "rc", reference_filename = str(args.fasta_ref_file))
 
     # Loading the bam file aligned vs the fake reference 32del
     # bamvsdel = pysam.AlignmentFile(bamvsdel_file, "rc", reference_filename = "/home/projects/cpr_10006/projects/ccr5/refs/CCR5_del32_120b.fasta")
 
-    bamvsdel = pysam.AlignmentFile(bamvsdel_file, "rc", reference_filename = str(args.fasta_fake))
+    bamvsdel = pysam.AlignmentFile(bamvsdel_path, "rc", reference_filename = str(args.fasta_fake_file))
 
     # Loading the reference GRCh37 fasta file
-    fasta_ref = pysam.FastaFile(args.fasta_ref)
+    fasta_ref = pysam.FastaFile(args.fasta_ref_file)
 
     # Loading the fake GRCh37 fasta file
-    fasta_fake = pysam.FastaFile(args.fasta_fake)
+    fasta_fake = pysam.FastaFile(args.fasta_fake_file)
 
-    # Loading the file containing the list of SNPs to use to calculate the haplotype probability
-    snp_file = args.snps
-
-    # Loading the file containing the list of the 86 SNPs that form the haplotype
-
-    haplotype_file = args.haplotype
-
-    # if args.haplotype:
-    #     print("--haplotype given")
-
-    #     haplotype_file = args.haplotype
-
-    # else:
-
-    #     print("--haplotype not given")
-    #     haplotype_file = None
-
-    baq_snp = args.baq_snps
-
-    baq_deletion = args.baq_deletion
-
-    length_threshold = int(args.length_threshold)
-
-    ol_threshold = int(args.overlapping_length_threshold)
-
-    perfect_match = str(args.perfect_match)
-
-    adjustment_threshold = int(args.adjustment_threshold)
-
-    return bamvsref, bamvsdel, fasta_ref, fasta_fake, snp_file, haplotype_file, baq_snp, baq_deletion, length_threshold, ol_threshold, perfect_match, adjustment_threshold
+    return bamvsref, bamvsdel, fasta_ref, fasta_fake
 
 
 def open_files():
@@ -114,15 +87,15 @@ def dict_to_list(reads_dict):
 
 def write_probdf(prob_df, outdir, sample):
     """Function to write to file the probability dataframe of the 4 TOP SNPs along with their coverages etc"""    
-    prob_df.to_csv(outdir + sample + "top4SNPs_prob_df.tsv", sep="\t")
+    prob_df.to_csv(Path.joinpath(outdir, sample + "top4SNPs_prob_df.tsv"), sep="\t")
 
 # I write a file containing the settings that I used to run the script
 def write_settings():
     settings_dict = collections.OrderedDict()
     settings_dict["samples"] = str(args.samples)
-    settings_dict["files-extension"] = str(args.files_extension)
-    settings_dict["folder-ref"] = str(args.folder_ref)
-    settings_dict["folder-fake"] = str(args.folder_fake)
+    settings_dict["files-extension"] = args.files_extension
+    settings_dict["folder-ref"] = args.folder_ref
+    settings_dict["folder-fake"] = args.folder_fake
     settings_dict["fasta-ref"] = str(args.fasta_ref)
     settings_dict["fasta-fake"] = str(args.fasta_fake)
     settings_dict["snps"] = str(snp_file)
