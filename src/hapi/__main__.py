@@ -46,10 +46,10 @@ from statistics import mean
 import argparse
 import re
 import csv
-from conf.config import create_parser
-from utils.data_utils import *
-from utils.probabilities_helpers import *
-from utils.mappings_helpers import *
+from hapi.conf.config import create_parser
+from hapi.utils.data_utils import *
+from hapi.utils.probabilities_helpers import *
+from hapi.utils.mappings_helpers import *
 
 ############## Execution #################
 

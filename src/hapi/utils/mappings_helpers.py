@@ -1,7 +1,8 @@
 import pandas as pd
-from utils.probabilities_helpers import *
 from collections import defaultdict
 from statistics import mean
+from hapi.utils.probabilities_helpers import *
+
 
 ############## Part A FUNCTIONS DECLARATION ##############
 
