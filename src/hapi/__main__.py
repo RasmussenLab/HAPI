@@ -237,10 +237,9 @@ def main():
 
         # 4 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 
-        if args.perfect_match == "yes":
+        if args.perfect_match:
             reads_dict_ref = tag_filtering(bamvsref, reads_dict_ref, lengths_dict_ref)
             reads_dict_del = tag_filtering(bamvsdel, reads_dict_del, lengths_dict_del)
-
 
         # 5 - Convert the dicts to lists, so it's easier to write in the output file
         reads_list_ref = dict_to_list(reads_dict_ref)
