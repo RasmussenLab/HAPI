@@ -7,14 +7,29 @@ from hapi.utils.probabilities_helpers import *
 
 ############## Part A FUNCTIONS DECLARATION ##############
 
-
+def get_pilecolumns(bam_file, baq, chrom, min_base_quality, adjustment_threshold, min_mapping_quality, fastafile, start, end):
+    
+    if baq == False:
+        pileupcolumns = bam_file.pileup(chrom, start, end, truncate=True,
+                                            min_base_quality=min_base_quality,
+                                            adjust_capq_threshold=adjustment_threshold,
+                                            min_mapping_quality=min_mapping_quality)
+    elif baq == True:
+        pileupcolumns = bam_file.pileup(chrom, start, end, truncate=True,
+                                            stepper="samtools", fastafile=fastafile, compute_baq=True,
+                                            min_base_quality=min_base_quality,
+                                            adjust_capq_threshold=adjustment_threshold,
+                                            min_mapping_quality=min_mapping_quality)
+    else:
+        raise ValueError('baq parameter selected neither True nor False')
+    
+    return pileupcolumns
 
 # def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_threshold, min_base_quality=30,
 #                     min_mapping_quality=30):
 
 # Trying to do the same as Kirstine
-def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_threshold, length_threshold, min_base_quality=0,
-                    min_mapping_quality=0):
+def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, fasta_ref, adjustment_threshold, length_threshold, min_base_quality=0, min_mapping_quality=0):
     """
     Extract the read bases, i.e. the bases of the reads that map to a specific position in the bam file.
     bq and mq are base quality and mapping quality. Change them if I want to filter.
@@ -35,27 +50,13 @@ def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_
 
     reads_list, other_list, ref_list, alt_list = [], [], [], []
     
-    if baq == False:
-        pileupcolumns = bamvsref_file.pileup(chrom, coordinate - 1, coordinate, truncate=True,
-                                                 min_base_quality=min_base_quality,
-                                                 adjust_capq_threshold=adjustment_threshold,
-                                                 min_mapping_quality=min_mapping_quality)
-    
-    elif baq == True:
-        pileupcolumns = bamvsref_file.pileup(chrom, coordinate - 1, coordinate, truncate=True, stepper="samtools",
-                                                 fastafile=fasta_ref, compute_baq=True,
-                                                 min_base_quality=min_base_quality,
-                                                 adjust_capq_threshold=adjustment_threshold,
-                                                 min_mapping_quality=min_mapping_quality)
-    
-    else:
-        raise ValueError('baq-snps parameter selected neither True nor False')
-    
+    pileupcolumns = get_pilecolumns(bamvsref_file, baq, chrom, min_base_quality, adjustment_threshold, min_mapping_quality, fastafile=fasta_ref, start=coordinate-1, end=coordinate)
     
     for pileupcolumn in pileupcolumns:
         reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt, length_threshold)
     
     return reads_list, other_list, ref_list, alt_list
+
 
 
 def extract_lists(pileupcolumn, ref, alt, length_threshold):
@@ -86,26 +87,28 @@ def extract_lists(pileupcolumn, ref, alt, length_threshold):
             quality = pileupread.alignment.query_alignment_qualities[pileupread.query_position]
 
             read_length = pileupread.alignment.query_length
-
+            
+            read_info_list = [base, quality, read_name, read_length]
+            
             if read_length <= length_threshold:
             # if True:
                 # If the read base corresponds to the Reference or to the Alternate allele, put it in the reads_list
                 if base == ref or base == alt:
-                    reads_list.append([base, quality, read_name, read_length])
+                    reads_list.append(read_info_list)
 
                 if base == ref:
-                    ref_list.append([base, quality, read_name, read_length])
+                    ref_list.append(read_info_list)
 
                 if base == alt:
-                    alt_list.append([base, quality, read_name, read_length])
+                    alt_list.append(read_info_list)
 
                 # If the read base is not like the reference nor like the alternate allele, put it in the other_list
                 if base != ref and base != alt:
-                    other_list.append([base, quality, read_name, read_length])
+                    other_list.append(read_info_list)
 
     return reads_list, other_list, ref_list, alt_list
 
-def calc_snps_posteriors(snp_list, bamvsref, baq_snp, adjustment_threshold, length_threshold):
+def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_threshold, length_threshold):
     """
     Calculate the Posterior Probabilities for each SNP, storing the information in a dataframe and saving the statistics
     relative to the total coverage on the SNPs and to the coverage of each of the 4 TOP SNPs
@@ -132,7 +135,7 @@ def calc_snps_posteriors(snp_list, bamvsref, baq_snp, adjustment_threshold, leng
         coordinate = int(coordinate)
 
         # 1 - Extract all the reads bases mapping to each snp
-        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, adjustment_threshold, length_threshold)
+        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, fasta_ref, adjustment_threshold, length_threshold)
 
         # 2 - Update SNPs coverage statistics
         dict_snps_cov = coverage_dict(dict_snps_cov, reads_list, idx, other_list, ref_list, alt_list)
@@ -225,25 +228,13 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_map
         for start_end in position_list:
 
             # I save the starting and ending coordinates of the 32bp sequence
-            S = start_end[0]
-            E = start_end[1]
-
+            S, E = start_end
+            
             # For each of the S and E
             for pos in start_end:
-                if baq == False:
-                    pileupcolumns = bam_file.pileup(chrom, pos - 1, pos, truncate=True,
-                                                        min_base_quality=min_base_quality,
-                                                        adjust_capq_threshold=adjustment_threshold,
-                                                        min_mapping_quality=min_mapping_quality)
-                elif baq == True:
-                    pileupcolumns = bam_file.pileup(chrom, pos - 1, pos, truncate=True, stepper="samtools",
-                                                        fastafile=fasta_ref, compute_baq=True,
-                                                        min_base_quality=min_base_quality,
-                                                        adjust_capq_threshold=adjustment_threshold,
-                                                        min_mapping_quality=min_mapping_quality)
-                else:
-                    raise ValueError('baq-deletion parameter selected neither True nor False')
-                
+                pileupcolumns = get_pilecolumns(bam_file, baq, chrom, min_base_quality, adjustment_threshold,
+                                                min_mapping_quality, fastafile=fasta_ref, start=pos-1, end=pos)
+              
                 for pileupcolumn in pileupcolumns:
                     reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
 
@@ -253,24 +244,19 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_map
     elif len(position_list) == 1:
 
         reads_dict = {}
-        if baq == "no":
-            for pileupcolumn in bam_file.pileup(chrom, position_list[0] - 1, position_list[0], truncate=True,
-                                                min_base_quality=min_base_quality,
-                                                adjust_capq_threshold=adjustment_threshold,
-                                                min_mapping_quality=min_mapping_quality):
-                reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_32del(pileupcolumn, position_list, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
-
-
-        elif baq == "yes":
-            for pileupcolumn in bam_file.pileup(chrom, position_list[0] - 1, position_list[0], truncate=True,
-                                                stepper="samtools", fastafile=fasta_fake, compute_baq=True,
-                                                min_base_quality=min_base_quality,
-                                                adjust_capq_threshold=adjustment_threshold,
-                                                min_mapping_quality=min_mapping_quality):
-                reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_32del(pileupcolumn, position_list, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
+        
+        pileupcolumns = get_pilecolumns(bam_file, baq, chrom, min_base_quality, adjustment_threshold, min_mapping_quality,
+                                        fastafile=fasta_fake, start=position_list[0] - 1, end=position_list[0])
+    
+        for pileupcolumn in pileupcolumns:
+            reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_32del(pileupcolumn, position_list, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
+        
 
         return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict
 
+    
+
+    
 
 def min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample):
     """
