@@ -87,7 +87,6 @@ def main():
 
     df_reads_del = pd.DataFrame(dtype=float, columns = ["sample", "read_name", "class"])
     
-    
     # Open the samples list
     samples_list = args.samples_file.read().splitlines()
 
@@ -130,7 +129,7 @@ def main():
         snp_list = snp_haplo_list(args.snps_file)
 
         # 2 - Calculate Posterior probability of each SNP given each possible Genotype
-        prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov = calc_snps_posteriors(snp_list, bamvsref, args.baq_snps, args.adjustment_threshold, args.length_threshold)
+        prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov = calc_snps_posteriors(snp_list, bamvsref, fasta_ref, args.baq_snps, args.adjustment_threshold, args.length_threshold)
 
 
 
