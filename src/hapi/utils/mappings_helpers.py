@@ -227,16 +227,14 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_map
         # For each coordinates couples
         for start_end in position_list:
 
-            # I save the starting and ending coordinates of the 32bp sequence
-            S, E = start_end
-            
             # For each of the S and E
             for pos in start_end:
                 pileupcolumns = get_pilecolumns(bam_file, baq, chrom, min_base_quality, adjustment_threshold,
                                                 min_mapping_quality, fastafile=fasta_ref, start=pos-1, end=pos)
               
                 for pileupcolumn in pileupcolumns:
-                    reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
+                    
+                    reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, position_list=start_end, pos=pos, min_over_type='ref')
 
         return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict
 
@@ -246,29 +244,15 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_map
         reads_dict = {}
         
         pileupcolumns = get_pilecolumns(bam_file, baq, chrom, min_base_quality, adjustment_threshold, min_mapping_quality,
-                                        fastafile=fasta_fake, start=position_list[0] - 1, end=position_list[0])
+                                        fastafile=fasta_fake, start=position_list[0]-1, end=position_list[0])
     
         for pileupcolumn in pileupcolumns:
-            reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_32del(pileupcolumn, position_list, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
+            reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, position_list=position_list, pos=None, min_over_type='del')
         
-
         return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict
 
     
-
-    
-
-def min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample):
-    """
-    Calculate the minimum overlapping length for each read in the bam file mapped against the GRCh37
-    :param pileupcolumn:
-    :param S:
-    :param E:
-    :param pos:
-    :param reads_dict:
-    :return:
-    """
-
+def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, min_over_type, position_list, pos):
     for pileupread in pileupcolumn.pileups:
         
         # If the read is not a deletion
@@ -291,31 +275,34 @@ def min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_map
             read_sequence = pileupread.alignment.query_sequence
 
             nm_tag = pileupread.alignment.get_tag("NM")
-
-
-
-
+            
             # I filter for only the reads under the threshold that I set (80 bp)
             if read_length <= length_threshold:
-   
-                # If the starting and ending position of the read are to the left and right of the deletion,
-                # I'll have a read overlapping across both the S and E.
-                if reference_start <= S and reference_end >= E:
-                    # Minimum overlapping length is 32
-                    min_over = 32
-                else:
-                    # I calculate the left and right overlap of the read
+                
+                if min_over_type == 'ref':
+                    S, E = position_list
+                    if reference_start <= S and reference_end >= E:
+                        # Minimum overlapping length is 32
+                        min_over = 32
+                    else:
+                        # I calculate the left and right overlap of the read
+                        left = query_position
+                        right = reference_end - pos + 1 
+                        
+                        # The minimum overlapping length is the minimum between these two
+                        min_over = min(left, right)
+                
+                # I calculate the left and right overlaps of the read
+                elif min_over_type == 'del':
                     left = query_position
-                    right = reference_end - pos + 1
+                    right = reference_end - position_list[0] + 1
 
-                    # The minimum overlapping length is the minimum between these two
+                    # I assign the minimum overlapping length and I add it with the relative read name to the dictionary
                     min_over = min(left, right)
-
-
+                
                 # I save all in a row
-                row_to_add = [sample, read_name, reference_start, reference_end, read_sequence, read_length, min_over, nm_tag, "ref"]
+                row_to_add = [sample, read_name, reference_start, reference_end, read_sequence, read_length, min_over, nm_tag, min_over_type]
 
-                # print("row_to_add", row_to_add)
                 df_length = len(df_mapping_all)
                 
                 # print("df_length", df_length)
@@ -325,87 +312,20 @@ def min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_map
                 if min_over >= ol_threshold:
                     # I append the minimum overlapping length to the reads dictionary in a list
 
-                    # print("read_name, min_over, nm_tag")
-                    # print(read_name, min_over, nm_tag)
-                    # to_add = [int(min_over), int(nm_tag)]
                     to_add = [int(min_over)]
-                    reads_dict[read_name].append(int(min_over))
-                    lengths_dict[read_name] = int(read_length)
-
-
-                    nm_tags_dict[read_name] = int(nm_tag)
-                    df_mapping_all.loc[df_length] = row_to_add
-
-    return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict
-
-
-def min_over_32del(pileupcolumn, position_list, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample):
-    """
-    Calculate the minimum overlapping length for each read in the bam file mapped against the fake reference
-    :param position:
-    :param position_list:
-    :return:
-    """
-    reads_dict = {}
-
-    for pileupread in pileupcolumn.pileups:
-
-        # If the read is not a deletion
-        if not pileupread.is_del and not pileupread.is_refskip:
-            read_name = pileupread.alignment.query_name
-
-            # Position of the starting base of the read on the genome
-            reference_start = pileupread.alignment.reference_start + 1
-
-            # Position of the ending base of the read on the genome
-            reference_end = pileupread.alignment.reference_end
-
-            # Position in the read overlapping the pileup position
-            query_position = pileupread.query_position + 1
-
-            # print("query position:", query_position)
-            read_length = pileupread.alignment.query_length
-
-            read_sequence = pileupread.alignment.query_sequence
-
-            nm_tag = pileupread.alignment.get_tag("NM")
-
-
-            # I calculate the left and right overlaps of the read
-            left = query_position
-            right = reference_end - position_list[0] + 1
-
-            # I assign the minimum overlapping length and I add it with the relative read name to the dictionary
-            min_over = min(left, right)
-
-            read_length = pileupread.alignment.query_length
-
-            # I filter for only the reads under the theshold that I set
-            if read_length <= length_threshold:
-
-                # I save all in a row
-                row_to_add = [sample, read_name, reference_start, reference_end, read_sequence, read_length, min_over, nm_tag, "del"]
-
-                df_length = len(df_mapping_all)
-                
-                # That I add to a dataframe so I can analyse it afterwards
-                # df_mapping_all.loc[df_length] = row_to_add
-
-                if min_over >= ol_threshold:
                     
-                    # to_add = [int(min_over), int(nm_tag)]
-                    to_add = [int(min_over)]
-
-                    reads_dict[read_name] = int(min_over)
+                    if min_over_type == 'ref':
+                        reads_dict[read_name].append(int(min_over))
+                    elif min_over_type == 'del':
+                        reads_dict[read_name] = int(min_over)
+                        
                     lengths_dict[read_name] = int(read_length)
 
+
                     nm_tags_dict[read_name] = int(nm_tag)
-
-
                     df_mapping_all.loc[df_length] = row_to_add
-
-
-    return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict
+            
+    return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict    
 
 
 def average_minimum_overlap(reads_dict):
