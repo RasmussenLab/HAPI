@@ -46,6 +46,7 @@ from statistics import mean
 import argparse
 import re
 import csv
+from itertools import chain
 from hapi.conf.config import create_parser
 from hapi.utils.data_utils import *
 from hapi.utils.probabilities_helpers import *
@@ -70,8 +71,7 @@ def main():
     with open(results_filepath, 'w') as output_header: output_header.write("Sample\tpRR_Data_n\tpRD_Data_n\tpDD_Data_n\tN_reads_ref\tN_reads_del\tMin_over_ref\tMin_over_del\tLengths_ref\tLengths_del\tCoverage_ref\tCoverage_alt\tSNP_1_rs113341849\tSNP_2_rs113010081\tSNP_3_rs11574435\tSNP_4_rs79815064\tp(RR)\tp(RA)\tp(AA)\tpData_RR\tpData_RD\tpData_DD\tpD_norm\tpRR_Data_r\tpRD_Data_r\tpDD_Data_r\tN_reads_mapping_both\n")
 
 
-    # Open the samples 
-#     samples_list = samples_to_list(args.samples)
+    # Open the samples list
     samples_list = args.samples_file.read().splitlines()
 
     # Initialize empty dataframe
@@ -93,22 +93,25 @@ def main():
         # Need to convert this list of lists in another list of just the column names with the format
         # rs58697594_ref, rs58697594_alt, rs73833032_ref, rs73833032_alt
 
-        rs_list_ref = [rs_id[0] + "_ref" for rs_id in haplotype_list]
-        rs_list_alt = [rs_id[0] + "_alt" for rs_id in haplotype_list]
+#         rs_list_ref = [rs_id[0] + "_ref" for rs_id in haplotype_list]
+#         rs_list_alt = [rs_id[0] + "_alt" for rs_id in haplotype_list]
 
-        # I contruct the rs_list as a list containing all the 82 SNPs _alt and _ref
+#         # I contruct the rs_list as a list containing all the 82 SNPs _alt and _ref
 
-        rs_list = []
-        rs_list.extend(rs_list_ref)
-        rs_list.extend(rs_list_alt)
+#         rs_list = []
+#         rs_list.extend(rs_list_ref)
+#         rs_list.extend(rs_list_alt)
 
+#         rs_list.sort()
+        
+
+        rs_list = list(chain.from_iterable((rs_id[0] + "_alt", rs_id[0] + "_ref") for rs_id in haplotype_list))
         rs_list.sort()
 
-        # print(rs_list)
         # I initialize an empty dataframe where I'll store the individual 86 SNPs reporting
         haplotype_df = pd.DataFrame(dtype=float)
         ref_haplo_count_df = pd.DataFrame(dtype=float)
-
+        
     # For each sample to analyse
     for sample in samples_list:
         print(sample)
@@ -122,7 +125,7 @@ def main():
 
             haplotype_list = snp_haplo_list(args.haplotype_file)
             # I report all the SNPs called of the haplotype
-            haplotype_df, ref_haplo_count_df = some_function(haplotype_list, haplotype_df, ref_haplo_count_df)
+            haplotype_df, ref_haplo_count_df = some_function(haplotype_list, haplotype_df, ref_haplo_count_df, bamvsref, args.baq_snps, args.adjustment_threshold, args.length_threshold, sample)
 
 
         ############## Part A: Prior Probability calculated as joint probability of top 4 SNPs' posterior probabilities - Execution #################
