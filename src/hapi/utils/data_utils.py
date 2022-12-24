@@ -1,6 +1,7 @@
 import pysam
 from collections import OrderedDict
 from pathlib import Path
+import csv
 
 ############## FILES OPENING FUNCTION DECLARATION ##############
 
@@ -77,50 +78,10 @@ def write_settings():
         writer = csv.DictWriter(settings_file, fieldnames = ["Option","Chosen"], delimiter="\t")
         writer.writerows(settings_dict)
 
-
-def write_results(results_filepath, coverage_ref, coverage_alt, dict_snps_cov,
-                  sample, N_reads_mapping_both, pRR_D_2_norm, pRD_D_2_norm,
-                  pDD_D_2_norm, reads_dict_ref, reads_dict_del, reads_list_ref,
-                  reads_list_del, lengths_list_ref, lengths_list_del,
-                  pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm,
-                  pD_RR_b, pD_RD_b, pD_DD_b, pD_2_norm, pRR_D_2_r, pRD_D_2_r,
-                  pDD_D_2_r):
-    # results_filename = re.search("[\w\d]+$", args.output_folder).group() + ".tsv"
-    # results_filepath = output_folder + results_filename
-    with open(results_filepath, "a") as output:
-        output.write(str(sample) + "\t" +  # Sample name
-                     # Posterior probabilities of the haplotype
-                     str(pRR_D_2_norm) + "\t" +  # p(RR|Data) normalized
-                     str(pRD_D_2_norm) + "\t" +  # p(RD|Data) normalized
-                     str(pDD_D_2_norm) + "\t" +   # p(DD|Data) normalized
-                     # N of reads mapping to either S or E in the bamVSGrch37 AND mapping to Pos breakpoint in bamVSFake
-                     str(len(reads_dict_ref)) + "\t" +
-                     str(len(reads_dict_del)) + "\t" +
-                     # Minimum overlapping lengths of each read mapping to the above mentioned bams
-                     str(reads_list_ref) + "\t" +
-                     str(reads_list_del) + "\t" +
-                     # Lengths of the reads
-                     str(lengths_list_ref) + "\t" +
-                     str(lengths_list_del) + "\t" +
-                     # Number of reads overlapping all the 82 SNPs, i.e. total coverage, not averaged
-                     str(coverage_ref) + "\t" +
-                     str(coverage_alt) + "\t" +
-                     # Number of reads overlapping each of the 4 TOP SNPs, i.e. coverage at that base
-                     str(dict_snps_cov["rs113341849"]) + "\t" + 
-                     str(dict_snps_cov["rs113010081"]) + "\t" +
-                     str(dict_snps_cov["rs11574435"]) + "\t" +  # rs11574435
-                     str(dict_snps_cov["rs79815064"]) + "\t" +  # rs11574435
-                    # Prior probabilities of the haplotype
-                     str(pRR_D_joint_norm) + "\t" +  # p(RR)
-                     str(pRA_D_joint_norm) + "\t" +  # p(RA)
-                     str(pAA_D_joint_norm) + "\t" +  # p(AA)
-                     # Reference or Deletion genotype Likelihoods from both bam files
-                     str(pD_RR_b) + "\t" +  # p(Data|RR)
-                     str(pD_RD_b) + "\t" +  # p(Data|RD)
-                     str(pD_DD_b) + "\t" +  # p(Data|DD)
-                     # p(D)
-                     str(pD_2_norm) + "\t" + # p(D)
-                     str(pRR_D_2_r) + "\t" +  # p(RR|Data) with pG = 0.33
-                     str(pRD_D_2_r) + "\t" +  # p(RD|Data) with pG = 0.33
-                     str(pDD_D_2_r) + "\t" +  # p(DD|Data) with pG = 0.33
-                     str(N_reads_mapping_both) + "\n")  
+def write_results(results_filepath, *argv):
+                  
+    with open(results_filepath, "a") as output_file:
+        values = [str(arg) for arg in argv]
+        writer = csv.writer(output_file, delimiter='\t')
+        writer.writerow(values)
+    
