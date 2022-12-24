@@ -92,19 +92,7 @@ def main():
         # e.g. [['rs58697594', '46275570', 'G', 'A', '0.8602'], ['rs73833032', '46276490', 'T', 'C', '0.8602']]
         # Need to convert this list of lists in another list of just the column names with the format
         # rs58697594_ref, rs58697594_alt, rs73833032_ref, rs73833032_alt
-
-#         rs_list_ref = [rs_id[0] + "_ref" for rs_id in haplotype_list]
-#         rs_list_alt = [rs_id[0] + "_alt" for rs_id in haplotype_list]
-
-#         # I contruct the rs_list as a list containing all the 82 SNPs _alt and _ref
-
-#         rs_list = []
-#         rs_list.extend(rs_list_ref)
-#         rs_list.extend(rs_list_alt)
-
-#         rs_list.sort()
-        
-
+        # I contruct the rs_list as a list containing all the 82 SNPs _alt and _ref
         rs_list = list(chain.from_iterable((rs_id[0] + "_alt", rs_id[0] + "_ref") for rs_id in haplotype_list))
         rs_list.sort()
 
@@ -118,7 +106,6 @@ def main():
 
         # I parse the arguments given when executing the script
         bamvsref, bamvsdel, fasta_ref, fasta_fake = open_files_args(args, sample)
-
 
         ############## Part 0: If --haplotype option is activated --> write a table to file containing the reporting of all the 86 SNPs
         if args.haplotype_file:
@@ -134,7 +121,6 @@ def main():
         # List of lists containing the 4 SNPs of the CEU rs333 haplotype with coordinates and R squared value to the rs333
         # e.g. [['rs58697594', '46275570', 'G', 'A', '0.8602'], ['rs73833032', '46276490', 'T', 'C', '0.8602']]
         snp_list = snp_haplo_list(args.snps_file)
-
 
         # 2 - Calculate Posterior probability of each SNP given each possible Genotype
         prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov = calc_snps_posteriors(snp_list, bamvsref, args.baq_snps, args.adjustment_threshold, args.length_threshold)
@@ -186,7 +172,7 @@ def main():
 
         N_reads_mapping_both = 0
 
-        list_reads_mapping_both  = []
+        list_reads_mapping_both = []
 
         for key in list(reads_dict_del.keys()):
 

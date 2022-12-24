@@ -11,7 +11,7 @@ def prob2phred(x):
     """Convert probability to Phred score"""
     return -10 * math.log10(x)
 
-def pD_G_(list, ref, alt):
+def pD_G_(reads_list, ref, alt):
     """
     Calculate step 1, 2, and 3 of genotype likelihood for each SNP
     :param list: list of read bases mapping each of the CEU rs33 haplotype SNPs; list
@@ -25,9 +25,9 @@ def pD_G_(list, ref, alt):
     pD_RR, pD_RA, pD_AA = 0, 0, 0
 
     # If the list is not empty
-    if not list == []:
+    if not reads_list == []:
         # Iterate over each read base of the list
-        for base in list:
+        for base in reads_list:
 
             # Following Simon's slides sequence:
             # Step 1: calculate prob of each base given the observed allele, given that the true base is the observed
@@ -194,49 +194,30 @@ def p_D_G_2(reads_dict, which_bam):
 
     # If the dict is not empty, i.e. if there is at least one read overlapping the region
     if reads_dict != {}:
-
-        # Bam vs GRCh37 --> finding reference sequence
-        if which_bam == "GRCh37":
-
-            for key, value in reads_dict.items():
-                # Step 1: calculate prob of reference or deleted sequence given the observed read
+        for key, value in reads_dict.items():
+            
+            # Step 1: calculate prob of reference or deleted sequence given the observed read
+            if which_bam == "GRCh37":
                 p_ref_r = 1 - (1 / value) ** 2
                 p_del_r = (1 - p_ref_r) / 2
-
-
-                # Step 2: calculate prob of Data, of reads, given each possible genotype, so Ref/Ref, Ref/Del, Del/Del
-                # Step 3: multiply (in this case sum, since they are logarithms), over all reads to calculate the
-                # Likelihood of each genotype p(D|G)
-                # this would be like doing p_ref_r/2 + p_ref_r/2, and it will just give p_ref_r so I simplified
-                pD_RR_list.append(p_ref_r)
-                pD_RD_list.append((p_ref_r + p_del_r) / 2)
-                pD_DD_list.append(p_del_r)
-
-
-            pD_RR = np.prod(pD_RR_list)
-            pD_RD = np.prod(pD_RD_list)
-            pD_DD = np.prod(pD_DD_list)
-
-        # Bam vs fake 32del --> finding deletion
-        if which_bam == "del":
-
-            for key, value in reads_dict.items():
-                # Step 1:calculate prob of reference or deleted sequence given the observed read
+            elif which_bam == "del":
                 p_del_r = 1 - (1 / value) ** 2
                 p_ref_r = (1 - p_del_r) / 2
+                
+            # Step 2: calculate prob of Data, of reads, given each possible genotype, so Ref/Ref, Ref/Del, Del/Del
+            # Step 3: multiply (in this case sum, since they are logarithms), over all reads to calculate the
+            # Likelihood of each genotype p(D|G)
+            # this would be like doing p_ref_r/2 + p_ref_r/2, and it will just give p_ref_r so I simplified
+            pD_RR_list.append(p_ref_r)
+            pD_RD_list.append((p_ref_r + p_del_r) / 2)
+            pD_DD_list.append(p_del_r)
 
 
-                # Step 2: calculate prob of Data, of reads, given each possible genotype, so Ref/Ref, Ref/Del, Del/Del
-                # Step 3: multiply (in this case sum, since they are logarithms), over all reads to calculate the
-                # Likelihood of each genotype p(D|G)
-                pD_RR_list.append(p_ref_r)
-                pD_RD_list.append((p_ref_r + p_del_r) / 2)
-                pD_DD_list.append(p_del_r)
-
-            pD_RR = np.prod(pD_RR_list)
-            pD_RD = np.prod(pD_RD_list)
-            pD_DD = np.prod(pD_DD_list)
-
+        pD_RR = np.prod(pD_RR_list)
+        pD_RD = np.prod(pD_RD_list)
+        pD_DD = np.prod(pD_DD_list)
+            
+        
     # If the dict is empty, there are no reads mapping to the region
     else:
 

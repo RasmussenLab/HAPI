@@ -30,32 +30,31 @@ def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_
     :return:
     """
 
-    # List containing the reads overlapping to the position when the base found corresponds to either the Ref or the Alt
-    reads_list = []
+    # reads_list contains the reads overlapping to the position when the base found corresponds to either the Ref or the Alt
+    # If the base found is different from either the Ref or the Alt, I'll put the read in other_list
 
-    # If the base found is different from either the Ref or the Alt, I'll put the read in this other list
-    other_list = []
-
-    ref_list, alt_list = [], []
+    reads_list, other_list, ref_list, alt_list = [], [], [], []
+    
     if baq == False:
-        for pileupcolumn in bamvsref_file.pileup(chrom, coordinate - 1, coordinate, truncate=True,
+        pileupcolumns = bamvsref_file.pileup(chrom, coordinate - 1, coordinate, truncate=True,
                                                  min_base_quality=min_base_quality,
                                                  adjust_capq_threshold=adjustment_threshold,
-                                                 min_mapping_quality=min_mapping_quality):
-            reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt, length_threshold)
-
-            
+                                                 min_mapping_quality=min_mapping_quality)
+    
     elif baq == True:
-        for pileupcolumn in bamvsref_file.pileup(chrom, coordinate - 1, coordinate, truncate=True, stepper="samtools",
+        pileupcolumns = bamvsref_file.pileup(chrom, coordinate - 1, coordinate, truncate=True, stepper="samtools",
                                                  fastafile=fasta_ref, compute_baq=True,
                                                  min_base_quality=min_base_quality,
                                                  adjust_capq_threshold=adjustment_threshold,
-                                                 min_mapping_quality=min_mapping_quality):
-
-            reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt, length_threshold)
+                                                 min_mapping_quality=min_mapping_quality)
+    
     else:
         raise ValueError('baq-snps parameter selected neither True nor False')
-
+    
+    
+    for pileupcolumn in pileupcolumns:
+        reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt, length_threshold)
+    
     return reads_list, other_list, ref_list, alt_list
 
 
@@ -125,22 +124,18 @@ def calc_snps_posteriors(snp_list, bamvsref, baq_snp, adjustment_threshold, leng
     dict_snps_cov = {}
 
     # Iterate through each SNP 
-    for snp in range(len(snp_list)):
-
-        # Extract the different fields of the file
-        id = snp_list[snp][0]
+    
+    for snp in snp_list:
 
         chrom = str(3)
-        coordinate = int(snp_list[snp][1])
-        ref = snp_list[snp][2]
-        alt = snp_list[snp][3]
-        rsquared = snp_list[snp][4]
+        idx, coordinate, ref, alt, rsquared = snp[0:5]
+        coordinate = int(coordinate)
 
         # 1 - Extract all the reads bases mapping to each snp
         reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, adjustment_threshold, length_threshold)
 
         # 2 - Update SNPs coverage statistics
-        dict_snps_cov = coverage_dict(dict_snps_cov, reads_list, id, other_list, ref_list, alt_list)
+        dict_snps_cov = coverage_dict(dict_snps_cov, reads_list, idx, other_list, ref_list, alt_list)
 
         coverage_ref += len(ref_list)
         coverage_alt += len(alt_list)
@@ -157,11 +152,11 @@ def calc_snps_posteriors(snp_list, bamvsref, baq_snp, adjustment_threshold, leng
 
         # If reads_list is empty it means that there were no reads overlapping the position, so I'll put 0.33
         if not reads_list:
-            row = pd.DataFrame([[id, chrom, ref, alt, float(rsquared), 0, 0, 0, 0, 0.33, 0.33, 0.33]],
+            row = pd.DataFrame([[idx, chrom, ref, alt, float(rsquared), 0, 0, 0, 0, 0.33, 0.33, 0.33]],
                                columns=columns_df,
                                index=[coordinate])
         else:
-            row = pd.DataFrame([[id, chrom, ref, alt, float(rsquared), 0, len(reads_list), len(ref_list), len(alt_list), pRR_D, pRA_D, pAA_D]],
+            row = pd.DataFrame([[idx, chrom, ref, alt, float(rsquared), 0, len(reads_list), len(ref_list), len(alt_list), pRR_D, pRA_D, pAA_D]],
                                columns=columns_df, index=[coordinate])
 
         # Whatever is the case, I'll append the row with this SNP to the probability dataframe
@@ -236,22 +231,21 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_map
             # For each of the S and E
             for pos in start_end:
                 if baq == False:
-                    for pileupcolumn in bam_file.pileup(chrom, pos - 1, pos, truncate=True,
+                    pileupcolumns = bam_file.pileup(chrom, pos - 1, pos, truncate=True,
                                                         min_base_quality=min_base_quality,
                                                         adjust_capq_threshold=adjustment_threshold,
-                                                        min_mapping_quality=min_mapping_quality):
-                        reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
-
+                                                        min_mapping_quality=min_mapping_quality)
                 elif baq == True:
-                    for pileupcolumn in bam_file.pileup(chrom, pos - 1, pos, truncate=True, stepper="samtools",
+                    pileupcolumns = bam_file.pileup(chrom, pos - 1, pos, truncate=True, stepper="samtools",
                                                         fastafile=fasta_ref, compute_baq=True,
                                                         min_base_quality=min_base_quality,
                                                         adjust_capq_threshold=adjustment_threshold,
-                                                        min_mapping_quality=min_mapping_quality):
-                        reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
-                
+                                                        min_mapping_quality=min_mapping_quality)
                 else:
                     raise ValueError('baq-deletion parameter selected neither True nor False')
+                
+                for pileupcolumn in pileupcolumns:
+                    reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference(pileupcolumn, S, E, pos, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample)
 
         return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict
 
@@ -440,8 +434,6 @@ def average_minimum_overlap(reads_dict):
     # I create an empty dictionary
     reads_dict_minimum = {}
 
-
-
     if reads_dict != {}:
 
         for key, value in reads_dict.items():
@@ -489,13 +481,10 @@ def tag_filtering(bamfile, reads_dict, lengths_dict):
     return reads_dict
 
 def tag_filtering_ccr5kirstine(bamfile, reads_dict, lengths_dict):
-    aligned_list = []
 
     # I create a list containing all the reads aligning in this region.
     # Each element of the list is a pysam.AlignmentSegment object
-    for read in bamfile.fetch("CCR5_del32_120b.fasta", 30, 90):
-        aligned_list.append(read)
-        
+    aligned_list = [read for read in bamfile.fetch("CCR5_del32_120b.fasta", 30, 90)]
         
     # For each read name in reads_dict:
     for key in list(reads_dict):
@@ -519,16 +508,12 @@ def some_function(haplotype_list, haplo_df, ref_haplo_count_df, bamvsref, baq_sn
     dict_ref_haplo_count = OrderedDict()
     referencecount, purereferencecount, haplocount, purehaplocount, notavail = 0, 0, 0, 0, 0
     # Iterate through each SNP 
-    for snp in range(len(haplotype_list)):
+    for snp in haplotype_list:
 
-        # Extract the different fields of the file
-        id = haplotype_list[snp][0]
         chrom = str(3)
-        coordinate = int(haplotype_list[snp][1])
-        ref = haplotype_list[snp][2]
-        alt = haplotype_list[snp][3]
-        rsquared = haplotype_list[snp][4]
-
+        idx, coordinate, ref, alt, rsquared = snp[0:5]
+        coordinate = int(coordinate)
+    
         # 1 - Extract all the reads bases mapping to each snp
         reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, adjustment_threshold, length_threshold)
 
@@ -540,14 +525,13 @@ def some_function(haplotype_list, haplo_df, ref_haplo_count_df, bamvsref, baq_sn
             referencecount +=1
 
         if ref_bases_n > 0 and alt_bases_n == 0:
-                purereferencecount +=1
+            purereferencecount +=1
 
         if alt_bases_n > 0:
-                haplocount +=1
+            haplocount +=1
         
         if alt_bases_n > 0 and ref_bases_n == 0:
-                purehaplocount +=1
-
+            purehaplocount +=1
 
 
         # 3 - Save these in a dictionary 
@@ -557,13 +541,13 @@ def some_function(haplotype_list, haplo_df, ref_haplo_count_df, bamvsref, baq_sn
             notavail +=1
 
 
-            dict_snps[id + "_ref"] = [math.nan]
-            dict_snps[id + "_alt"] = [math.nan]
+            dict_snps[idx + "_ref"] = [math.nan]
+            dict_snps[idx + "_alt"] = [math.nan]
 
         else:
 
-            dict_snps[id + "_ref"] = [ref_bases_n]
-            dict_snps[id + "_alt"] = [alt_bases_n]
+            dict_snps[idx + "_ref"] = [ref_bases_n]
+            dict_snps[idx + "_alt"] = [alt_bases_n]
 
     # print("referencecount:", referencecount)
     # print("purereferencecount:", purereferencecount)
