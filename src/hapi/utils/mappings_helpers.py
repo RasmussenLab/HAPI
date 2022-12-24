@@ -1,5 +1,6 @@
 import pandas as pd
 from collections import defaultdict
+from collections import OrderedDict
 from statistics import mean
 from hapi.utils.probabilities_helpers import *
 
@@ -12,7 +13,7 @@ from hapi.utils.probabilities_helpers import *
 #                     min_mapping_quality=30):
 
 # Trying to do the same as Kirstine
-def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_threshold, min_base_quality=0,
+def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_threshold, length_threshold, min_base_quality=0,
                     min_mapping_quality=0):
     """
     Extract the read bases, i.e. the bases of the reads that map to a specific position in the bam file.
@@ -41,7 +42,7 @@ def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_
                                                  min_base_quality=min_base_quality,
                                                  adjust_capq_threshold=adjustment_threshold,
                                                  min_mapping_quality=min_mapping_quality):
-            reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt)
+            reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt, length_threshold)
 
             
     elif baq == True:
@@ -51,14 +52,14 @@ def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, adjustment_
                                                  adjust_capq_threshold=adjustment_threshold,
                                                  min_mapping_quality=min_mapping_quality):
 
-            reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt)
+            reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt, length_threshold)
     else:
         raise ValueError('baq-snps parameter selected neither True nor False')
 
     return reads_list, other_list, ref_list, alt_list
 
 
-def extract_lists(pileupcolumn, ref, alt):
+def extract_lists(pileupcolumn, ref, alt, length_threshold):
     """
     Function to extract the reads mapping to a certain position from the PileupColumn object. If the read base at the
     position corresponds to either the Reference or Alternate allele of the SNP as written in the file, the read will be
@@ -510,12 +511,12 @@ def tag_filtering_ccr5kirstine(bamfile, reads_dict, lengths_dict):
     return reads_dict
 
 
-def some_function(haplotype_list, haplo_df, ref_haplo_count_df):
+def some_function(haplotype_list, haplo_df, ref_haplo_count_df, bamvsref, baq_snp, adjustment_threshold, length_threshold, sample):
 
     # I initialize dictionary where I'll store the reference and alternate bases called for each SNP
-    dict_snps = collections.OrderedDict()
+    dict_snps = OrderedDict()
 
-    dict_ref_haplo_count = collections.OrderedDict()
+    dict_ref_haplo_count = OrderedDict()
     referencecount, purereferencecount, haplocount, purehaplocount, notavail = 0, 0, 0, 0, 0
     # Iterate through each SNP 
     for snp in range(len(haplotype_list)):
@@ -529,7 +530,7 @@ def some_function(haplotype_list, haplo_df, ref_haplo_count_df):
         rsquared = haplotype_list[snp][4]
 
         # 1 - Extract all the reads bases mapping to each snp
-        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, adjustment_threshold)
+        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, adjustment_threshold, length_threshold)
 
         # 2 - Calculate the number of reference and alternate bases called for each SNP
         ref_bases_n = len(ref_list)
