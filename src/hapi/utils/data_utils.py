@@ -4,13 +4,6 @@ from pathlib import Path
 
 ############## FILES OPENING FUNCTION DECLARATION ##############
 
-# def samples_to_list(samples_file):
-    
-#     samples_list = samples_file.read().splitlines()
-
-#     return samples_list
-
-
 # TODO: change to regex to create a string containing the sample and then everything that is afterwards, but needs to end with cram or bam
 def open_files_args(args, sample):
 
@@ -35,38 +28,12 @@ def open_files_args(args, sample):
     return bamvsref, bamvsdel, fasta_ref, fasta_fake
 
 
-def open_files():
-    # Loading the bam file aligned vs the reference GRCh37 genome
-    bamvsref_file = pysam.AlignmentFile(
-        "/Users/lmz306/OneDrive - Københavns Universitet/delta_ccr5/analyses/del_neg_id/VK548.sort.rmdup.realign.md.bam", "rb")
-
-    # Loading the bam file aligned vs the fake reference 32del
-    bamvsdel_file = pysam.AlignmentFile(
-        "/Users/lmz306/OneDrive - Københavns Universitet/delta_ccr5/analyses/del_neg_id/library_VK548.bam", "rb")
-
-    # Loading the reference GRCh37 fasta file
-    fasta_ref = pysam.FastaFile("/Users/lmz306/OneDrive - Københavns Universitet/delta_ccr5/refs/hs.build37.1.fa")
-
-    # Loading the fake GRCh37 fasta file
-    fasta_fake = pysam.Fastafile(
-        "/Users/lmz306/OneDrive - Københavns Universitet/delta_ccr5/refs/CCR5_del32_120b.fasta")
-
-    # Loading the file containing the list of SNPs to use to calculate the haplotype probability
-    snp_file = "/Users/lmz306/OneDrive - Københavns Universitet/delta_ccr5/analyses/del_neg_id/ceu_haplo_82snps.txt"
-
-    baq_snp = "no"
-
-    baq_deletion = "no"
-    return bamvsref_file, bamvsdel_file, fasta_ref, fasta_fake, snp_file, baq_snp, baq_deletion
-
 def snp_haplo_list(snp_file):
     """Open file containing the list of the SNPs to analyze and save it in a list. The file was found at this path in computerome 2:
     /home/projects/cpr_10006/people/s162317/ancient/samtools_mpileup_LD/NyVikinSimon/nucleotideCount/ceu_haplotype86snps_nucleotides.txt"""
 
     with open(snp_file, "r") as file:
-        snp_list = []
-        for line in file:
-            snp_list.append(line.strip().split(sep="\t"))
+        snp_list = [line.strip().split(sep="\t") for line in file]
     return snp_list
 
 def dict_to_list(reads_dict):
@@ -80,6 +47,7 @@ def dict_to_list(reads_dict):
     # I convert the reads_dict from a normal dict to an Ordered Dict
     reads_dict = OrderedDict(reads_dict)
     if reads_dict != {}:
+        
         for key, value in reads_dict.items():
             reads_list.append(value)
 
