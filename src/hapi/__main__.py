@@ -67,22 +67,29 @@ def main():
     outdir = args.output_folder / "prob_dfs/"
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-
-    with open(results_filepath, 'w') as output_header: output_header.write("Sample\tpRR_Data_n\tpRD_Data_n\tpDD_Data_n\tN_reads_ref\tN_reads_del\tMin_over_ref\tMin_over_del\tLengths_ref\tLengths_del\tCoverage_ref\tCoverage_alt\tSNP_1_rs113341849\tSNP_2_rs113010081\tSNP_3_rs11574435\tSNP_4_rs79815064\tp(RR)\tp(RA)\tp(AA)\tpData_RR\tpData_RD\tpData_DD\tpD_norm\tpRR_Data_r\tpRD_Data_r\tpDD_Data_r\tN_reads_mapping_both\n")
-
-
-    # Open the samples list
-    samples_list = args.samples_file.read().splitlines()
-
+    
+    # Writing the header into the results.tsv file
+    with open(results_filepath, 'w', encoding='utf-8') as output_file:
+        header = ["Sample", "pRR_Data_n", "pRD_Data_n", "pDD_Data_n", "N_reads_ref",
+                  "N_reads_del", "Min_over_ref", "Min_over_del", "Lengths_ref", 
+                  "Lengths_del", "Coverage_ref", "Coverage_alt", "SNP_1_rs113341849",
+                  "SNP_2_rs113010081", "SNP_3_rs11574435", "SNP_4_rs79815064", "p(RR)",
+                  "p(RA)", "p(AA)", "pData_RR", "pData_RD", "pData_DD", "pD_norm",
+                  "pRR_Data_r", "pRD_Data_r", "pDD_Data_r", "N_reads_mapping_both"]
+        writer = csv.writer(output_file, delimiter='\t')
+        writer.writerow(header)
+    
     # Initialize empty dataframe
     df_mapping_all = pd.DataFrame(dtype=float, columns = ["sample", "read_name", "reference_start", "reference_end", "read_sequence", "read_length", "min_over", "n_mismatches", "alignment"])
-
-    df_ref_haplo_counts = pd.DataFrame(dtype=float, columns = ["sample", "Referencecount", "Purereferencecount", "haplocount", "Purehaplocount", "notAvail"])
 
     # In these dataframes I will store, for each sample, which reads were assigned to ref and which to del, according to the current criteria (overlapping lenght)
     df_reads_ref = pd.DataFrame(dtype=float, columns = ["sample", "read_name", "class"])
 
     df_reads_del = pd.DataFrame(dtype=float, columns = ["sample", "read_name", "class"])
+    
+    
+    # Open the samples list
+    samples_list = args.samples_file.read().splitlines()
 
     # If --haplotype option is activated --> write a table to file containing the reporting of all the 86 SNPs
     if args.haplotype_file:
@@ -165,8 +172,6 @@ def main():
         reads_dict_ref = average_minimum_overlap(reads_dict_ref)
 
 
-
-
         # In case there are reads that overlap both the reference and the collapsed genome, I'll keep only the one that
         # has the lowest number of mismatches and the highest overlapping length
 
@@ -221,9 +226,6 @@ def main():
                         del lengths_dict_del[key]
 
 
-
-
-
         # 4 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 
         if args.perfect_match:
@@ -262,14 +264,13 @@ def main():
         pDD_D_2_r = pG_D_2(0.33, pD_DD_b, pD_2_r)
 
         # 11 - I append the results to the output file
-        write_results(results_filepath, coverage_ref, coverage_alt, dict_snps_cov, 
-                      sample, N_reads_mapping_both, pRR_D_2_norm, pRD_D_2_norm,
-                      pDD_D_2_norm, reads_dict_ref, reads_dict_del, reads_list_ref,
-                      reads_list_del, lengths_list_ref, lengths_list_del,
-                      pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm,
-                      pD_RR_b, pD_RD_b, pD_DD_b, pD_2_norm, pRR_D_2_r, pRD_D_2_r,
-                      pDD_D_2_r)
-
+        write_results(results_filepath, sample, pRR_D_2_norm, pRD_D_2_norm, pDD_D_2_norm,
+                      len(reads_dict_ref), len(reads_dict_del),  reads_list_ref, reads_list_del,
+                      lengths_list_ref, lengths_list_del, coverage_ref, coverage_alt, 
+                      dict_snps_cov["rs113341849"], dict_snps_cov["rs113010081"], dict_snps_cov["rs11574435"],
+                      dict_snps_cov["rs79815064"], pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm, 
+                      pD_RR_b, pD_RD_b, pD_DD_b, pD_2_norm, pRR_D_2_r, pRD_D_2_r, pDD_D_2_r, N_reads_mapping_both)
+    
         # TODO: fix the write_settings
         # write_settings()
 
@@ -286,13 +287,6 @@ def main():
             df_reads_del.loc[len(df_reads_del)] = row_del
 
 
-
-    # print("haplotype_df")
-    # print(haplotype_df)
-    # print(haplotype_df.ndim)
-    # print(haplotype_file)
-    # print(haplotype_list)
-    # print(len(haplotype_list))
     # I average the overlapping lengths 
     df_mapping_all = (df_mapping_all
     .assign(average_min_over = 
