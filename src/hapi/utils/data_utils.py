@@ -1,6 +1,7 @@
 import pysam
 from collections import OrderedDict
 from pathlib import Path
+import pandas as pd
 import csv
 
 ############## FILES OPENING FUNCTION DECLARATION ##############
@@ -78,10 +79,14 @@ def write_settings():
         writer = csv.DictWriter(settings_file, fieldnames = ["Option","Chosen"], delimiter="\t")
         writer.writerows(settings_dict)
 
-def write_results(results_filepath, *argv):
-                  
-    with open(results_filepath, "a") as output_file:
-        values = [str(arg) for arg in argv]
-        writer = csv.writer(output_file, delimiter='\t')
-        writer.writerow(values)
-    
+        
+def write_results(results_filepath, count, **kwargs):
+    records = [kwargs]
+    records_df = pd.DataFrame(records)
+    if count == 0:
+        mode = "w"
+        header = True
+    else:
+        mode = "a"
+        header = False
+    records_df.to_csv(results_filepath, sep="\t", header=header, mode=mode, index=False)
