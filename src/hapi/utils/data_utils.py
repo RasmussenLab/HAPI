@@ -79,14 +79,22 @@ def write_settings():
         writer = csv.DictWriter(settings_file, fieldnames = ["Option","Chosen"], delimiter="\t")
         writer.writerows(settings_dict)
 
+
+def write_results(results_filepath, records, header):
+    
+    if records:
         
-def write_results(results_filepath, count, **kwargs):
-    records = [kwargs]
-    records_df = pd.DataFrame(records)
-    if count == 0:
-        mode = "w"
-        header = True
-    else:
-        mode = "a"
-        header = False
-    records_df.to_csv(results_filepath, sep="\t", header=header, mode=mode, index=False)
+        records_df = pd.DataFrame.from_records(records)
+        
+        if header:
+            records_df.to_csv(results_filepath, sep="\t", header=header, mode='w', index=False)
+            return False
+            
+        else:
+            records_df.to_csv(results_filepath, sep="\t", header=header, mode='a', index=False)
+    
+    return header
+    
+        
+        
+    

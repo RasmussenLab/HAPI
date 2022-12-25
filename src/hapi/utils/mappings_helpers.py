@@ -58,7 +58,6 @@ def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, fasta_ref, 
     return reads_list, other_list, ref_list, alt_list
 
 
-
 def extract_lists(pileupcolumn, ref, alt, length_threshold):
     """
     Function to extract the reads mapping to a certain position from the PileupColumn object. If the read base at the
@@ -119,8 +118,9 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
     """
 
     # I initialize an empty dataframe where I'll store the Posterior probabilities of each genotype at each position
-    columns_df = ["id", "chrom", "ref", "alt", "rsquared", "other", "n_total_reads", "n_ref_reads","n_alt_reads", "P(RR|D)", "P(RA|D)", "P(AA|D)"]
+
     prob_df = pd.DataFrame(columns=columns_df)
+    prob_list = []
 
     # I initialize an empty dictionary and an empty counter to save the coverage statistics of the SNPs
     coverage_ref, coverage_alt, coverage_other = 0, 0, 0
@@ -152,26 +152,47 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
 
         # 5 - Calculate p(G|D), the posterior probability of each deletion genotype. 
         pRR_D, pRA_D, pAA_D = pG_D_(pD_RR, pD_RA, pD_AA, pD)
-
+        
         # If reads_list is empty it means that there were no reads overlapping the position, so I'll put 0.33
         if not reads_list:
-            row = pd.DataFrame([[idx, chrom, ref, alt, float(rsquared), 0, 0, 0, 0, 0.33, 0.33, 0.33]],
-                               columns=columns_df,
-                               index=[coordinate])
+            snp_result = {
+                "id": idx,
+                "chrom": chrom,
+                "ref": ref,
+                "alt": alt,
+                "rsquared": float(rsquared),
+                "other": 0,
+                "n_total_reads": 0,
+                "n_ref_reads": 0,
+                "n_alt_reads": 0,
+                "P(RR|D)": 0.33,
+                "P(RA|D)": 0.33,
+                "P(AA|D)": 0.33
+            }
         else:
-            row = pd.DataFrame([[idx, chrom, ref, alt, float(rsquared), 0, len(reads_list), len(ref_list), len(alt_list), pRR_D, pRA_D, pAA_D]],
-                               columns=columns_df, index=[coordinate])
-
-        # Whatever is the case, I'll append the row with this SNP to the probability dataframe
-        prob_df = prob_df.append(row)
-
+            snp_result = {
+                "id": idx,
+                "chrom": chrom,
+                "ref": ref,
+                "alt": alt,
+                "rsquared": float(rsquared),
+                "other": 0,
+                "n_total_reads": len(reads_list),
+                "n_ref_reads": len(ref_list),
+                "n_alt_reads": len(alt_list),
+                "P(RR|D)": pRR_D,
+                "P(RA|D)": pRA_D,
+                "P(AA|D)": pAA_D
+            }
+            
         # If there are reads with a base other than the REF or the ALT, add them as a list in the column "other"
-        if not other_list == []:
-            prob_df = prob_df.astype({"other": object})
-
-            prob_df.at[coordinate, "other"] = other_list
-
-
+        if not other_list:
+            snp_result["other"] = other_list
+            
+        prob_list.append(snp_result)
+        
+    prob_df = pd.DataFrame.from_records(prob_list)
+    
     return prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov
 
 
@@ -199,7 +220,7 @@ def coverage_dict(dict_snps_cov, reads_list, id, other_list, ref_list, alt_list)
 
 ############## Part B FUNCTIONS DECLARATION ##############
 
-def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_mapping_all, length_threshold, ol_threshold, sample, fasta_fake, fasta_ref, baq,  min_base_quality=30, min_mapping_quality=30):
+def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, mapping_all, length_threshold, ol_threshold, sample, fasta_fake, fasta_ref, baq,  min_base_quality=30, min_mapping_quality=30):
     """
     Function to calculate the minimum length that a read overlaps the:
     - Starting and Ending position of the 32deletion in the bam aligned against the reference genome GRCh37
@@ -234,9 +255,9 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_map
               
                 for pileupcolumn in pileupcolumns:
                     
-                    reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, position_list=start_end, pos=pos, min_over_type='ref')
+                    reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, position_list=start_end, pos=pos, min_over_type='ref')
 
-        return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict
+        return reads_dict, lengths_dict, mapping_all, nm_tags_dict
 
     # If the list contains 1 element, i.e. P --> Bam aligned vs fake Reference, to detect reads HAVING the deletion
     elif len(position_list) == 1:
@@ -247,12 +268,12 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, df_map
                                         fastafile=fasta_fake, start=position_list[0]-1, end=position_list[0])
     
         for pileupcolumn in pileupcolumns:
-            reads_dict, lengths_dict, df_mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, position_list=position_list, pos=None, min_over_type='del')
+            reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, position_list=position_list, pos=None, min_over_type='del')
         
-        return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict
+        return reads_dict, lengths_dict, mapping_all, nm_tags_dict
 
     
-def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, df_mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, min_over_type, position_list, pos):
+def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, min_over_type, position_list, pos):
     for pileupread in pileupcolumn.pileups:
         
         # If the read is not a deletion
@@ -301,9 +322,10 @@ def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, df_mappi
                     min_over = min(left, right)
                 
                 # I save all in a row
-                row_to_add = [sample, read_name, reference_start, reference_end, read_sequence, read_length, min_over, nm_tag, min_over_type]
-
-                df_length = len(df_mapping_all)
+#                 row_to_add = [sample, read_name, reference_start, reference_end, read_sequence, read_length, min_over, nm_tag, min_over_type]
+                
+                
+                df_length = len(mapping_all)
                 
                 # print("df_length", df_length)
                 # That I add to a dataframe so I can analyse it afterwards
@@ -323,9 +345,21 @@ def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, df_mappi
 
 
                     nm_tags_dict[read_name] = int(nm_tag)
-                    df_mapping_all.loc[df_length] = row_to_add
+                    
+                    row_to_add = {
+                            "sample": sample,
+                            "read_name": read_name,
+                            "reference_start": reference_start,
+                            "reference_end": reference_end,
+                            "read_sequence": read_sequence,
+                            "read_length": read_length,
+                            "min_over": min_over,
+                            "n_mismatches": nm_tag,
+                            "alignment": min_over_type
+                        }
+                    mapping_all.append(row_to_add)
             
-    return reads_dict, lengths_dict, df_mapping_all, nm_tags_dict    
+    return reads_dict, lengths_dict, mapping_all, nm_tags_dict    
 
 
 def average_minimum_overlap(reads_dict):
@@ -406,13 +440,14 @@ def tag_filtering_ccr5kirstine(bamfile, reads_dict, lengths_dict):
     return reads_dict
 
 
-def some_function(haplotype_list, haplo_df, ref_haplo_count_df, bamvsref, baq_snp, adjustment_threshold, length_threshold, sample):
+def some_function(haplotype_list, bamvsref, baq_snp, adjustment_threshold, length_threshold, sample, fasta_ref):
 
     # I initialize dictionary where I'll store the reference and alternate bases called for each SNP
+    haplo_results_list, ref_haplo_count_list = [], []
     dict_snps = OrderedDict()
-
     dict_ref_haplo_count = OrderedDict()
     referencecount, purereferencecount, haplocount, purehaplocount, notavail = 0, 0, 0, 0, 0
+    
     # Iterate through each SNP 
     for snp in haplotype_list:
 
@@ -421,7 +456,7 @@ def some_function(haplotype_list, haplo_df, ref_haplo_count_df, bamvsref, baq_sn
         coordinate = int(coordinate)
     
         # 1 - Extract all the reads bases mapping to each snp
-        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, adjustment_threshold, length_threshold)
+        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, fasta_ref, adjustment_threshold, length_threshold)
 
         # 2 - Calculate the number of reference and alternate bases called for each SNP
         ref_bases_n = len(ref_list)
@@ -455,22 +490,17 @@ def some_function(haplotype_list, haplo_df, ref_haplo_count_df, bamvsref, baq_sn
             dict_snps[idx + "_ref"] = [ref_bases_n]
             dict_snps[idx + "_alt"] = [alt_bases_n]
 
-    # print("referencecount:", referencecount)
-    # print("purereferencecount:", purereferencecount)
-    # print("haplocount:", haplocount)
-    # print("purehaplocount:", purehaplocount)
-    # print("notavail:", notavail)
+    dict_ref_haplo_count = {
+        "Sample": [sample],
+        "referencecount": [referencecount],
+        "purereferencecount": [purereferencecount],
+        "haplocount": [haplocount],
+        "purehaplocount": [purehaplocount],
+        "notavail": [notavail]
+        }
 
-    dict_ref_haplo_count["Sample"] = [sample]
-    dict_ref_haplo_count["referencecount"] = [referencecount]
-    dict_ref_haplo_count["purereferencecount"] = [purereferencecount]
-    dict_ref_haplo_count["haplocount"] = [haplocount]
-    dict_ref_haplo_count["purehaplocount"] = [purehaplocount]
-    dict_ref_haplo_count["notavail"] = [notavail]
-
-    row_sample = pd.DataFrame.from_dict(dict_snps)
-    haplo_df = haplo_df.append(row_sample)
-
-    row_ref_haplo_row_sample = pd.DataFrame.from_dict(dict_ref_haplo_count)
-    ref_haplo_count_df = ref_haplo_count_df.append(row_ref_haplo_row_sample)
-    return haplo_df, ref_haplo_count_df
+    haplo_results_list.append(dict_snps)
+    ref_haplo_count_list.append(dict_ref_haplo_count)
+#     row_ref_haplo_row_sample = pd.DataFrame.from_dict(dict_ref_haplo_count)
+#     ref_haplo_count_df = ref_haplo_count_df.append(row_ref_haplo_row_sample)
+    return haplo_results_list, ref_haplo_count_list
