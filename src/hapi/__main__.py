@@ -65,20 +65,8 @@ def main():
     # Output folder
     results_filepath = args.output_folder / "results.tsv"
     outdir = args.output_folder / "prob_dfs/"
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    
-    # Writing the header into the results.tsv file
-    with open(results_filepath, 'w', encoding='utf-8') as output_file:
-        header = ["Sample", "pRR_Data_n", "pRD_Data_n", "pDD_Data_n", "N_reads_ref",
-                  "N_reads_del", "Min_over_ref", "Min_over_del", "Lengths_ref", 
-                  "Lengths_del", "Coverage_ref", "Coverage_alt", "SNP_1_rs113341849",
-                  "SNP_2_rs113010081", "SNP_3_rs11574435", "SNP_4_rs79815064", "p(RR)",
-                  "p(RA)", "p(AA)", "pData_RR", "pData_RD", "pData_DD", "pD_norm",
-                  "pRR_Data_r", "pRD_Data_r", "pDD_Data_r", "N_reads_mapping_both"]
-        writer = csv.writer(output_file, delimiter='\t')
-        writer.writerow(header)
-    
+    outdir.mkdir(exist_ok=True, parents=True)
+
     # Initialize empty dataframe
     df_mapping_all = pd.DataFrame(dtype=float, columns = ["sample", "read_name", "reference_start", "reference_end", "read_sequence", "read_length", "min_over", "n_mismatches", "alignment"])
 
@@ -107,7 +95,7 @@ def main():
         ref_haplo_count_df = pd.DataFrame(dtype=float)
         
     # For each sample to analyse
-    for sample in samples_list:
+    for count, sample in enumerate(samples_list):
         print(sample)
 
         # I parse the arguments given when executing the script
@@ -262,13 +250,17 @@ def main():
         pRD_D_2_r = pG_D_2(0.33, pD_RD_b, pD_2_r)
         pDD_D_2_r = pG_D_2(0.33, pD_DD_b, pD_2_r)
 
+        
         # 11 - I append the results to the output file
-        write_results(results_filepath, sample, pRR_D_2_norm, pRD_D_2_norm, pDD_D_2_norm,
-                      len(reads_dict_ref), len(reads_dict_del),  reads_list_ref, reads_list_del,
-                      lengths_list_ref, lengths_list_del, coverage_ref, coverage_alt, 
-                      dict_snps_cov["rs113341849"], dict_snps_cov["rs113010081"], dict_snps_cov["rs11574435"],
-                      dict_snps_cov["rs79815064"], pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm, 
-                      pD_RR_b, pD_RD_b, pD_DD_b, pD_2_norm, pRR_D_2_r, pRD_D_2_r, pDD_D_2_r, N_reads_mapping_both)
+        write_results(results_filepath, count, Sample=sample, pRR_Data_n=pRR_D_2_norm, pRD_Data_n=pRD_D_2_norm,
+                      pDD_Data_n=pDD_D_2_norm,N_reads_ref=len(reads_dict_ref), N_reads_del=len(reads_dict_del),
+                      Min_over_ref=reads_list_ref, Min_over_del=reads_list_del,Lengths_ref=lengths_list_ref,
+                      Lengths_del=lengths_list_del, Coverage_ref=coverage_ref, Coverage_alt=coverage_alt, 
+                      SNP_1_rs113341849=dict_snps_cov["rs113341849"], SNP_2_rs113010081=dict_snps_cov["rs113010081"],
+                      SNP_3_rs11574435=dict_snps_cov["rs11574435"], SNP_4_rs79815064=dict_snps_cov["rs79815064"],
+                      p_RR=pRR_D_joint_norm, p_RA=pRA_D_joint_norm, p_AA=pAA_D_joint_norm, pData_RR=pD_RR_b,
+                      pData_RD=pD_RD_b, pData_DD=pD_DD_b, pD_norm=pD_2_norm, pRR_Data_r=pRR_D_2_r,
+                      pRD_Data_r=pRD_D_2_r, pDD_Data_r=pDD_D_2_r, N_reads_mapping_both=N_reads_mapping_both)
     
         # TODO: fix the write_settings
         # write_settings()
@@ -296,7 +288,6 @@ def main():
     df_mapping_all = df_mapping_all.drop(columns = ["min_over"])
 
     df_mapping_all = df_mapping_all.drop_duplicates()
-
 
 
     # I need to average the overlapping lengths of the ref
