@@ -201,23 +201,23 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
 
 
 
-def coverage_dict(dict_snps_cov, reads_list, id, other_list, ref_list, alt_list):
+def coverage_dict(dict_snps_cov, reads_list, snp_id, other_list, ref_list, alt_list):
     """
     Updates the dictionary counter "dict_snps_cov" with the number of reads overlapping the 4 TOP SNPs
     :param dict_snps_cov:
     :return:
     """
 
-    if id == "rs113341849":
+    if snp_id == "rs113341849":
         dict_snps_cov["rs113341849"] = len(alt_list)
 
-    elif id == "rs113010081":
+    elif snp_id == "rs113010081":
         dict_snps_cov["rs113010081"] = len(alt_list)
 
-    elif id == "rs11574435":
+    elif snp_id == "rs11574435":
         dict_snps_cov["rs11574435"] = len(alt_list)
 
-    elif id == "rs79815064":
+    elif snp_id == "rs79815064":
         dict_snps_cov["rs79815064"] = len(alt_list)
 
     return dict_snps_cov
