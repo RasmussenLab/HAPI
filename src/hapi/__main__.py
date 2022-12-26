@@ -159,7 +159,7 @@ def main():
 
         # In case there are reads that overlap both the reference and the collapsed genome, I'll keep only the one that
         # has the lowest number of mismatches and the highest overlapping length                            
-        reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del, N_reads_mapping_both = remove_overlaps(reads_dict_del, reads_dict_ref, nm_tags_dict_del, lengths_dict_ref, lengths_dict_del, nm_tags_dict_ref)
+        reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del, n_reads_mapping_both = remove_overlaps(reads_dict_del, reads_dict_ref, nm_tags_dict_del, lengths_dict_ref, lengths_dict_del, nm_tags_dict_ref)
 
         # 4 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 
@@ -228,7 +228,7 @@ def main():
             "pRR_Data_r": pRR_D_2_r,
             "pRD_Data_r": pRD_D_2_r,
             "pDD_Data_r": pDD_D_2_r,
-            "N_reads_mapping_both": N_reads_mapping_both
+            "N_reads_mapping_both": n_reads_mapping_both
         }]
         
             

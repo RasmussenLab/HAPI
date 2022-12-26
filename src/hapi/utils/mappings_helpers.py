@@ -143,7 +143,7 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
         reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, fasta_ref, adjustment_threshold, length_threshold)
 
         # 2 - Update SNPs coverage statistics
-        dict_snps_cov = coverage_dict(dict_snps_cov, reads_list, idx, other_list, ref_list, alt_list)
+        dict_snps_cov = coverage_dict(dict_snps_cov, idx, alt_list)
 
         coverage_ref += len(ref_list)
         coverage_alt += len(alt_list)
@@ -207,7 +207,7 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
 
 
 
-def coverage_dict(dict_snps_cov, reads_list, snp_id, other_list, ref_list, alt_list):
+def coverage_dict(dict_snps_cov, snp_id, alt_list):
     """
     Updates the dictionary counter "dict_snps_cov" with the number of reads overlapping the 4 TOP SNPs
     :param dict_snps_cov:
@@ -388,18 +388,13 @@ def average_minimum_overlap(reads_dict):
 
         for key, value in reads_dict.items():
 
-            # print("key, value")
-            # print(key, value)
-            # print(type(key), type(value))
             # If the read overlaps across both breakpoints for at least one coordinate couple, set min_over to 32
             if 32 in value:
                 min_over = 32
-                # nm_tag = value[1]
 
             # Else, min_over will be calculate as the average of the minimum overlaps for each coordinate couple
             else:
                 min_over = mean(value)
-                # nm_tag = value[1]
 
             reads_dict_minimum[key] = min_over
 
@@ -455,7 +450,6 @@ def some_function(haplotype_list, bamvsref, baq_snp, adjustment_threshold, lengt
     # I initialize dictionary where I'll store the reference and alternate bases called for each SNP
     haplo_results_list, ref_haplo_count_list = [], []
     dict_snps = OrderedDict()
-    dict_ref_haplo_count = OrderedDict()
     referencecount, purereferencecount, haplocount, purehaplocount, notavail = 0, 0, 0, 0, 0
     
     # Iterate through each SNP 
