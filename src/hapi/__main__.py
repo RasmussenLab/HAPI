@@ -224,8 +224,8 @@ def main():
         
             
         records_ref, records_del = [], []
-        splits = zip([reads_dict_ref, reads_dict_del], ["ref", "del"], [records_ref, records_del])
-        for reads_dict, _class, records_class in splits:
+        ref_del_references = zip([reads_dict_ref, reads_dict_del], ["ref", "del"], [records_ref, records_del])
+        for reads_dict, _class, records_class in ref_del_references:
             for read in reads_dict.keys():
                 result_class = {
                     "sample": sample, 
