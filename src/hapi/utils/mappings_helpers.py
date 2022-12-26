@@ -1,8 +1,14 @@
-import pandas as pd
 from collections import defaultdict
 from collections import OrderedDict
 from statistics import mean
-from hapi.utils.probabilities_helpers import *
+
+import pandas as pd
+
+from hapi.utils.probabilities_helpers import (
+    pD_G_,
+    pD_,
+    pG_D_
+)
 
 
 ############## Part A FUNCTIONS DECLARATION ##############

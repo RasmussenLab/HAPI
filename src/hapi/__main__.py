@@ -30,28 +30,37 @@ reference_end: not converted because it's in 0-based exclusive
 """
 
 # Libraries loading
-import sys
-import numpy as np
-from numpy import prod
-import pandas as pd
-import pysam
-import math
-import copy
-from time import time
-import os
-import collections
-from collections import defaultdict
-from collections import OrderedDict
-from statistics import mean
-import argparse
-import re
 import csv
 from itertools import chain
+from time import time
+
+import pandas as pd
+
 from hapi.conf.config import create_parser
-from hapi.utils.data_utils import *
-from hapi.utils.probabilities_helpers import *
-from hapi.utils.mappings_helpers import *
-from pathlib import Path
+from hapi.utils.data_utils import (
+    open_files_args,
+    snp_haplo_list,
+    dict_to_list,
+    write_probdf,
+    write_results
+)
+from hapi.utils.probabilities_helpers import (
+    prob_to_weighted,
+    calc_prob_joint,
+    pD_RR_b_,
+    p_D_G_2,
+    pD_2_,
+    pG_D_2
+)
+from hapi.utils.mappings_helpers import (
+    calc_snps_posteriors,
+    minimum_overlap,
+    average_minimum_overlap,
+    tag_filtering,
+    some_function,
+    remove_overlaps
+)
+
 ############## Execution #################
 
 def main():
