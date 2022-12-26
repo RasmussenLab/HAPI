@@ -67,26 +67,28 @@ def main():
     outdir = args.output_folder / "prob_dfs/"
     outdir.mkdir(exist_ok=True, parents=True)
     
-    # Initialize empty dataframe
+    # Initialize empty list and header assignments
     mapping_all = []
-
+    header, header_del, header_ref = True, True, True
+    
     # Open the samples list
     samples_list = args.samples_file.read().splitlines()
 
     # If --haplotype option is activated --> write a table to file containing the reporting of all the 86 SNPs
     if args.haplotype_file:
-        
-        haplotype_list = snp_haplo_list(args.haplotype_file)
+         # Initialize empty list and header assignments
         header_hapl, header_hapl_c = True, True
+        
         # e.g. [['rs58697594', '46275570', 'G', 'A', '0.8602'], ['rs73833032', '46276490', 'T', 'C', '0.8602']]
         # Need to convert this list of lists in another list of just the column names with the format
         # rs58697594_ref, rs58697594_alt, rs73833032_ref, rs73833032_alt
         # I contruct the rs_list as a list containing all the 82 SNPs _alt and _ref
+        
+        haplotype_list = snp_haplo_list(args.haplotype_file)
         rs_list = list(chain.from_iterable((rs_id[0] + "_alt", rs_id[0] + "_ref") for rs_id in haplotype_list))
         rs_list.sort()
 
 
-    header, header_del, header_ref = True, True, True
     # For each sample to analyse
     for sample in samples_list:
         print(sample)
@@ -111,10 +113,6 @@ def main():
         # 2 - Calculate Posterior probability of each SNP given each possible Genotype
         prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov = calc_snps_posteriors(snp_list, bamvsref, fasta_ref, args.baq_snps, args.adjustment_threshold, args.length_threshold)
 
-        # 2.5 - I calculate the average coverage haplotype
-        coverage_ref = coverage_ref / len(snp_list)
-        coverage_alt = coverage_alt / len(snp_list)
-        coverage_other = coverage_other / len(snp_list)
 
         # 3 - Weighted probs calculation: multiply each SNP's probability by the relative Rsquared and store in new columns.
         # 3 - Plus, add a column with their logarithm10 conversion
@@ -143,6 +141,7 @@ def main():
         # 2 - Calculation of the minimum overlapping lengths of the reads
         # In the dataframe df_mapping_all I put all the reads mapping, so both those that map vs reference and those that map vs collapsed
         reads_dict_ref, lengths_dict_ref, mapping_all, nm_tags_dict_ref = minimum_overlap(bamvsref, "3", position_list_reference, args.adjustment_threshold, mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion)
+        
         reads_dict_del, lengths_dict_del, mapping_all, nm_tags_dict_del = minimum_overlap(bamvsdel, "3", position_list_deletion, args.adjustment_threshold, mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion)
 
         # 3 - Average of the overlapping lengths of all the 4 coordinates couples in the bam vs GRCh37
@@ -150,58 +149,8 @@ def main():
 
 
         # In case there are reads that overlap both the reference and the collapsed genome, I'll keep only the one that
-        # has the lowest number of mismatches and the highest overlapping length
-
-        N_reads_mapping_both = 0
-
-        list_reads_mapping_both = []
-
-        for key in list(reads_dict_del.keys()):
-
-            if key in reads_dict_ref:
-                N_reads_mapping_both += 1
-                # print("##########################")
-                # print("nm_tags_dict_del[key], nm_tags_dict_ref[key]")
-                # print(nm_tags_dict_del[key], nm_tags_dict_ref[key])
-                # If the read vs del has a lower number of mismatches than the read vs ref
-                if nm_tags_dict_del[key] < nm_tags_dict_ref[key]:
-
-                    # Assign the read to del, i.e. remove the read vs ref from its dictionary
-                    del reads_dict_ref[key]
-                    del lengths_dict_ref[key]
-
-
-                 # If the read vs del has a higher number of mismatches than the read vs ref
-                elif nm_tags_dict_del[key] > nm_tags_dict_ref[key]:
-
-                    # Assign the read to ref, i.e. remove the read vs del from its dictionary
-                    del reads_dict_del[key]
-                    del lengths_dict_del[key]
-
-                # If the number of mismatches is the same among the two:
-                else:
-
-                    # If the overlapping length of the read vs del is lower than the one of the read vs ref:
-                    if reads_dict_del[key] < reads_dict_ref[key]:
-
-                        # Assign the read to ref, i.e. remove the read vs del from its dictionary
-                        del reads_dict_del[key]
-                        del lengths_dict_del[key]
-
-                    elif reads_dict_ref[key] < reads_dict_del[key]:
-
-                        del reads_dict_ref[key]
-                        del lengths_dict_ref[key]
-
-                    # If also this is the same, remove from both of them
-                    else:
-
-                        del reads_dict_ref[key]
-                        del lengths_dict_ref[key]
-
-                        del reads_dict_del[key]
-                        del lengths_dict_del[key]
-
+        # has the lowest number of mismatches and the highest overlapping length                            
+        reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del, N_reads_mapping_both = remove_overlaps(reads_dict_del, reads_dict_ref, nm_tags_dict_del, lengths_dict_ref, lengths_dict_del, nm_tags_dict_ref)
 
         # 4 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 

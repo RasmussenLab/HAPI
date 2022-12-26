@@ -119,7 +119,6 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
 
     # I initialize an empty dataframe where I'll store the Posterior probabilities of each genotype at each position
 
-    prob_df = pd.DataFrame(columns=columns_df)
     prob_list = []
 
     # I initialize an empty dictionary and an empty counter to save the coverage statistics of the SNPs
@@ -192,6 +191,11 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
         prob_list.append(snp_result)
         
     prob_df = pd.DataFrame.from_records(prob_list)
+    
+    # I calculate the average coverage haplotype
+    coverage_ref = coverage_ref / len(snp_list)
+    coverage_alt = coverage_alt / len(snp_list)
+    coverage_other = coverage_other / len(snp_list)
     
     return prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov
 
@@ -501,6 +505,58 @@ def some_function(haplotype_list, bamvsref, baq_snp, adjustment_threshold, lengt
 
     haplo_results_list.append(dict_snps)
     ref_haplo_count_list.append(dict_ref_haplo_count)
-#     row_ref_haplo_row_sample = pd.DataFrame.from_dict(dict_ref_haplo_count)
-#     ref_haplo_count_df = ref_haplo_count_df.append(row_ref_haplo_row_sample)
+
     return haplo_results_list, ref_haplo_count_list
+
+def remove_overlaps(reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del):
+
+    N_reads_mapping_both = 0
+
+
+    for key in list(reads_dict_del.keys()):
+
+        if key in reads_dict_ref:
+            N_reads_mapping_both += 1
+            # print("##########################")
+            # print("nm_tags_dict_del[key], nm_tags_dict_ref[key]")
+            # print(nm_tags_dict_del[key], nm_tags_dict_ref[key])
+            # If the read vs del has a lower number of mismatches than the read vs ref
+            if nm_tags_dict_del[key] < nm_tags_dict_ref[key]:
+
+                # Assign the read to del, i.e. remove the read vs ref from its dictionary
+                del reads_dict_ref[key]
+                del lengths_dict_ref[key]
+
+
+             # If the read vs del has a higher number of mismatches than the read vs ref
+            elif nm_tags_dict_del[key] > nm_tags_dict_ref[key]:
+
+                # Assign the read to ref, i.e. remove the read vs del from its dictionary
+                del reads_dict_del[key]
+                del lengths_dict_del[key]
+
+            # If the number of mismatches is the same among the two:
+            else:
+
+                # If the overlapping length of the read vs del is lower than the one of the read vs ref:
+                if reads_dict_del[key] < reads_dict_ref[key]:
+
+                    # Assign the read to ref, i.e. remove the read vs del from its dictionary
+                    del reads_dict_del[key]
+                    del lengths_dict_del[key]
+
+                elif reads_dict_ref[key] < reads_dict_del[key]:
+
+                    del reads_dict_ref[key]
+                    del lengths_dict_ref[key]
+
+                # If also this is the same, remove from both of them
+                else:
+
+                    del reads_dict_ref[key]
+                    del lengths_dict_ref[key]
+
+                    del reads_dict_del[key]
+                    del lengths_dict_del[key]
+
+    return(reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del, N_reads_mapping_both)
