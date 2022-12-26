@@ -44,16 +44,7 @@ def dict_to_list(reads_dict):
     :param reads_dict:
     :return: reads_list: list containing the minimum overlapping lengths of the reads from the dictionary
     """
-    reads_list = []
-
-    # I convert the reads_dict from a normal dict to an Ordered Dict
-    reads_dict = OrderedDict(reads_dict)
-    if reads_dict != {}:
-        
-        for key, value in reads_dict.items():
-            reads_list.append(value)
-
-    return reads_list
+    return [reads_dict[key] for key in sorted(reads_dict.keys())]
 
 def write_probdf(prob_df, outdir, sample):
     """Function to write to file the probability dataframe of the 4 TOP SNPs along with their coverages etc"""    
