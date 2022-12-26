@@ -1,6 +1,5 @@
 import math
 import numpy as np
-import pandas as pd
 
 def phred2prob(x):
     """Convert Phred score to probability"""
