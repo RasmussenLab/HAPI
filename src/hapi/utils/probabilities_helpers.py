@@ -24,7 +24,7 @@ def pD_G_(reads_list, ref, alt):
     pD_RR, pD_RA, pD_AA = 0, 0, 0
 
     # If the list is not empty
-    if not reads_list == []:
+    if reads_list != []:
         # Iterate over each read base of the list
         for base in reads_list:
 
@@ -226,8 +226,6 @@ def p_D_G_2(reads_dict, which_bam):
         pD_DD = 0.33
 
     return pD_RR, pD_RD, pD_DD
-    # return math.log10(pD_RR), math.log10(pD_RD), math.log10(pD_DD)
-
 
 # p(D)
 def pD_2_(pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm, pD_RR_b, pD_RD_b, pD_DD_b):
@@ -248,14 +246,6 @@ def pD_2_(pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm, pD_RR_b, pD_RD_b
 def pG_D_2(pG, pD_G, pD):
 
     pG_D_2 = (pG * pD_G) / pD
-    # print("pG_D_2 = (pG * pD_G) / pD")
-    # print("{} = ({} * {}) / {}".format(str(pG_D_2), str(pG), str(pD_G), str(pD)))
 
     return pG_D_2
 
-# def pG_D_2_random(pG, pD_G, pD_r):
-#     pG_D_2_r = (0.33 * pD_G) / pD_r
-
-#     # print("pG_D_2_r = (pG * pD_G) / pD")
-#     # print("{} = ({} * {}) / {}".format(str(pG_D_2_r), str(0.33), str(pD_G), str(pD_r)))
-#     return pG_D_2_r
