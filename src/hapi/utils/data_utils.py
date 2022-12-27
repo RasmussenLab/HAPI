@@ -4,22 +4,26 @@ from pathlib import Path
 import pandas as pd
 import pysam
 
+
 ############## FILES OPENING FUNCTION DECLARATION ##############
 
-# TODO: change to regex to create a string containing the sample and then everything that is afterwards, but needs to end with cram or bam
 def open_files_args(args, sample):
+    bamvsref_path = Path.joinpath(args.folder_ref,
+                                  sample + args.files_extension)
 
-    bamvsref_path = Path.joinpath(args.folder_ref, sample + args.files_extension)
-
-    bamvsdel_path = Path.joinpath(args.folder_fake, sample + args.files_extension)
+    bamvsdel_path = Path.joinpath(args.folder_fake,
+                                  sample + args.files_extension)
 
     # Loading the bam file aligned vs the reference GRCh37 genome
-    bamvsref = pysam.AlignmentFile(bamvsref_path, "rc", reference_filename = str(args.fasta_ref_file))
+    bamvsref = pysam.AlignmentFile(bamvsref_path, "rc",
+                                   reference_filename=str(args.fasta_ref_file))
 
-    # Loading the bam file aligned vs the fake reference 32del
-    # bamvsdel = pysam.AlignmentFile(bamvsdel_file, "rc", reference_filename = "/home/projects/cpr_10006/projects/ccr5/refs/CCR5_del32_120b.fasta")
+    # Loading the bam file aligned vs the fake reference 32del bamvsdel =
+    # pysam.AlignmentFile(bamvsdel_file, "rc", reference_filename =
+    # "/home/projects/cpr_10006/projects/ccr5/refs/CCR5_del32_120b.fasta")
 
-    bamvsdel = pysam.AlignmentFile(bamvsdel_path, "rc", reference_filename = str(args.fasta_fake_file))
+    bamvsdel = pysam.AlignmentFile(bamvsdel_path, "rc", reference_filename=str(
+        args.fasta_fake_file))
 
     # Loading the reference GRCh37 fasta file
     fasta_ref = pysam.FastaFile(args.fasta_ref_file)
@@ -31,30 +35,38 @@ def open_files_args(args, sample):
 
 
 def snp_haplo_list(snp_file):
-    """Open file containing the list of the SNPs to analyze and save it in a list. The file was found at this path in computerome 2:
-    /home/projects/cpr_10006/people/s162317/ancient/samtools_mpileup_LD/NyVikinSimon/nucleotideCount/ceu_haplotype86snps_nucleotides.txt"""
+    """Open file containing the list of the SNPs to analyze and save it in a
+    list. The file was found at this path in computerome 2:
+    /home/projects/cpr_10006/people/s162317/ancient/samtools_mpileup_LD
+    /NyVikinSimon/nucleotideCount/ceu_haplotype86snps_nucleotides.txt """
 
     with open(snp_file, "r") as file:
         snp_list = [line.strip().split(sep="\t") for line in file]
     return snp_list
 
+
 def dict_to_list(reads_dict):
     """
-    Convert the reads dictionary to list containing only the average minimum overlapping lengths without read names
+    Convert the reads dictionary to list containing only the average minimum
+    overlapping lengths without read names
     :param reads_dict:
-    :return: reads_list: list containing the minimum overlapping lengths of the reads from the dictionary
+    :return: reads_list: list containing the minimum overlapping lengths of the
+    reads from the dictionary
     """
     return [reads_dict[key] for key in sorted(reads_dict.keys())]
 
+
 def write_probdf(prob_df, outdir, sample):
-    """Function to write to file the probability dataframe of the 4 TOP SNPs along with their coverages etc"""    
-    prob_df.to_csv(Path.joinpath(outdir, sample + "top4SNPs_prob_df.tsv"), sep="\t")
+    """Function to write to file the probability dataframe of the 4 TOP SNPs
+    along with their coverages etc """
+    prob_df.to_csv(Path.joinpath(outdir, sample + "top4SNPs_prob_df.tsv"),
+                   sep="\t")
+
 
 # I write a file containing the settings that I used to run the script
 def write_settings(args):
-    
     settings_dict = {arg: str(getattr(args, arg)) for arg in vars(args)}
-    
+
     with open(args.output_folder / "settings.tsv", "w") as settings_file:
         writer = csv.writer(settings_file, delimiter="\t")
         for row in settings_dict.items():
@@ -62,20 +74,28 @@ def write_settings(args):
 
 
 def write_results(results_filepath, records, header):
-    
     if records:
-        
+
         records_df = pd.DataFrame.from_records(records)
-        
+
         if header:
-            records_df.to_csv(results_filepath, sep="\t", header=header, mode='w', index=False)
+            records_df.to_csv(results_filepath, sep="\t", header=header,
+                              mode='w', index=False)
             return False
-            
+
         else:
-            records_df.to_csv(results_filepath, sep="\t", header=header, mode='a', index=False)
-    
+            records_df.to_csv(results_filepath, sep="\t", header=header,
+                              mode='a', index=False)
+
     return header
-    
-        
-        
-    
+
+
+def averaging_df_column(df, cols_to_group, avg_df_column):
+    df = df.assign(
+        average_min_over=
+        lambda x: x.groupby(cols_to_group)[avg_df_column].transform("mean"))
+
+    df = df.drop(columns=[avg_df_column])
+    df = df.drop_duplicates()
+
+    return df
