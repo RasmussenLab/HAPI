@@ -17,15 +17,15 @@ def get_pilecolumns(bam_file, baq, chrom, min_base_quality, adjustment_threshold
     
     if baq == False:
         pileupcolumns = bam_file.pileup(chrom, start, end, truncate=True,
-                                            min_base_quality=min_base_quality,
-                                            adjust_capq_threshold=adjustment_threshold,
-                                            min_mapping_quality=min_mapping_quality)
+                                        min_base_quality=min_base_quality,
+                                        adjust_capq_threshold=adjustment_threshold,
+                                        min_mapping_quality=min_mapping_quality)
     elif baq == True:
         pileupcolumns = bam_file.pileup(chrom, start, end, truncate=True,
-                                            stepper="samtools", fastafile=fastafile, compute_baq=True,
-                                            min_base_quality=min_base_quality,
-                                            adjust_capq_threshold=adjustment_threshold,
-                                            min_mapping_quality=min_mapping_quality)
+                                        stepper="samtools", fastafile=fastafile, compute_baq=True,
+                                        min_base_quality=min_base_quality,
+                                        adjust_capq_threshold=adjustment_threshold,
+                                        min_mapping_quality=min_mapping_quality)
     else:
         raise ValueError('baq parameter selected neither True nor False')
     
@@ -59,12 +59,13 @@ def extr_rbases_bam(bamvsref_file, chrom, coordinate, ref, alt, baq, fasta_ref, 
     pileupcolumns = get_pilecolumns(bamvsref_file, baq, chrom, min_base_quality, adjustment_threshold, min_mapping_quality, fastafile=fasta_ref, start=coordinate-1, end=coordinate)
     
     for pileupcolumn in pileupcolumns:
-        reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt, length_threshold)
+
+        reads_list, other_list, ref_list, alt_list = extract_lists(pileupcolumn, ref, alt, length_threshold, reads_list, other_list, ref_list, alt_list)
     
     return reads_list, other_list, ref_list, alt_list
 
 
-def extract_lists(pileupcolumn, ref, alt, length_threshold):
+def extract_lists(pileupcolumn, ref, alt, length_threshold, reads_list, other_list, ref_list, alt_list):
     """
     Function to extract the reads mapping to a certain position from the PileupColumn object. If the read base at the
     position corresponds to either the Reference or Alternate allele of the SNP as written in the file, the read will be
@@ -73,8 +74,6 @@ def extract_lists(pileupcolumn, ref, alt, length_threshold):
     :return: reads_list
     :return: other_list
     """
-    # I initialize the empty lists
-    reads_list, other_list, ref_list, alt_list = [], [], [], []
 
     # For each read mapping to the PileupColumn position
     for pileupread in pileupcolumn.pileups:
@@ -96,7 +95,6 @@ def extract_lists(pileupcolumn, ref, alt, length_threshold):
             read_info_list = [base, quality, read_name, read_length]
             
             if read_length <= length_threshold:
-            # if True:
                 # If the read base corresponds to the Reference or to the Alternate allele, put it in the reads_list
                 if base == ref or base == alt:
                     reads_list.append(read_info_list)
