@@ -196,7 +196,7 @@ def p_D_G_2(reads_dict, which_bam):
         for key, value in reads_dict.items():
             
             # Step 1: calculate prob of reference or deleted sequence given the observed read
-            if which_bam == "GRCh37":
+            if which_bam == "ref":
                 p_ref_r = 1 - (1 / value) ** 2
                 p_del_r = (1 - p_ref_r) / 2
             elif which_bam == "del":

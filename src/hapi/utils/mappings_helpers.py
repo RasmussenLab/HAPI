@@ -109,7 +109,7 @@ def extract_lists(pileupcolumn, ref, alt, length_threshold, reads_list, other_li
 
     return reads_list, other_list, ref_list, alt_list
 
-def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_threshold, length_threshold):
+def calc_snps_posteriors(snp_list, bamvsref, chrom, fasta_ref, baq_snp, adjustment_threshold, length_threshold, top4_snps_list):
     """
     Calculate the Posterior Probabilities for each SNP, storing the information in a dataframe and saving the statistics
     relative to the total coverage on the SNPs and to the coverage of each of the 4 TOP SNPs
@@ -131,7 +131,6 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
     
     for snp in snp_list:
 
-        chrom = str(3)
         idx, coordinate, ref, alt, rsquared = snp[0:5]
         coordinate = int(coordinate)
 
@@ -139,7 +138,7 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
         reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref, chrom, coordinate, ref, alt, baq_snp, fasta_ref, adjustment_threshold, length_threshold)
 
         # 2 - Update SNPs coverage statistics
-        dict_snps_cov = coverage_dict(dict_snps_cov, idx, alt_list)
+        dict_snps_cov = coverage_dict(dict_snps_cov, idx, alt_list, top4_snps_list)
 
         coverage_ref += len(ref_list)
         coverage_alt += len(alt_list)
@@ -203,25 +202,16 @@ def calc_snps_posteriors(snp_list, bamvsref, fasta_ref, baq_snp, adjustment_thre
 
 
 
-def coverage_dict(dict_snps_cov, snp_id, alt_list):
+def coverage_dict(dict_snps_cov, snp_id, alt_list, top4_snps_list):
     """
     Updates the dictionary counter "dict_snps_cov" with the number of reads overlapping the 4 TOP SNPs
     :param dict_snps_cov:
     :return:
     """
-
-    if snp_id == "rs113341849":
-        dict_snps_cov["rs113341849"] = len(alt_list)
-
-    elif snp_id == "rs113010081":
-        dict_snps_cov["rs113010081"] = len(alt_list)
-
-    elif snp_id == "rs11574435":
-        dict_snps_cov["rs11574435"] = len(alt_list)
-
-    elif snp_id == "rs79815064":
-        dict_snps_cov["rs79815064"] = len(alt_list)
-
+    for top_snp in top4_snps_list:
+        if snp_id == top_snp:
+            dict_snps_cov[top_snp] = len(alt_list)
+    
     return dict_snps_cov
 
 ############## Part B FUNCTIONS DECLARATION ##############
@@ -383,39 +373,14 @@ def average_minimum_overlap(reads_dict):
     return dict((k, 32) if 32 in v else (k, mean(v)) for k, v in reads_dict.items())
 
 
-def tag_filtering(bamfile, reads_dict, lengths_dict):
-    aligned_list = []
+def tag_filtering(bamfile, reads_dict, lengths_dict, chrom, start, end):
 
-    # I create a list containing all the reads aligning in this region.
-    # Each element of the list is a pysam.AlignmentSegment object
-    for read in bamfile.fetch("3", 46414943, 46414980):
-        aligned_list.append(read)
-        
-        
     # For each read name in reads_dict:
-    for key in list(reads_dict):
+    for key in reads_dict.keys():
 
-        # For each read in the above list
-        for read in aligned_list:
-
-            # If the read from reads_dict is in the list AND does not have a perfect match, I'll remove it from the dictionary
-            if key == read.query_name and read.get_tag("NM") != 0:
-                del reads_dict[key]
-                del lengths_dict[key]
-
-    return reads_dict
-
-def tag_filtering_ccr5kirstine(bamfile, reads_dict, lengths_dict):
-
-    # I create a list containing all the reads aligning in this region.
-    # Each element of the list is a pysam.AlignmentSegment object
-    aligned_list = [read for read in bamfile.fetch("CCR5_del32_120b.fasta", 30, 90)]
-        
-    # For each read name in reads_dict:
-    for key in list(reads_dict):
-
-        # For each read in the above list
-        for read in aligned_list:
+        # For each read aligning in this region.
+        # Each element of the list is a pysam.AlignmentSegment object
+        for read in bamfile.fetch(chrom, start, end):
 
             # If the read from reads_dict is in the list AND does not have a perfect match, I'll remove it from the dictionary
             if key == read.query_name and read.get_tag("NM") != 0:
@@ -425,7 +390,7 @@ def tag_filtering_ccr5kirstine(bamfile, reads_dict, lengths_dict):
     return reads_dict
 
 
-def some_function(haplotype_list, bamvsref, baq_snp, adjustment_threshold, length_threshold, sample, fasta_ref):
+def some_function(haplotype_list, bamvsref, chrom, baq_snp, adjustment_threshold, length_threshold, sample, fasta_ref):
 
     # I initialize dictionary where I'll store the reference and alternate bases called for each SNP
     haplo_results_list, ref_haplo_count_list = [], []
@@ -435,7 +400,6 @@ def some_function(haplotype_list, bamvsref, baq_snp, adjustment_threshold, lengt
     # Iterate through each SNP 
     for snp in haplotype_list:
 
-        chrom = str(3)
         idx, coordinate, ref, alt, rsquared = snp[0:5]
         coordinate = int(coordinate)
     
@@ -490,13 +454,13 @@ def some_function(haplotype_list, bamvsref, baq_snp, adjustment_threshold, lengt
 
 def remove_overlaps(reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del):
 
-    N_reads_mapping_both = 0
+    n_reads_mapping_both = 0
 
 
     for key in list(reads_dict_del.keys()):
 
         if key in reads_dict_ref:
-            N_reads_mapping_both += 1
+            n_reads_mapping_both += 1
             # print("##########################")
             # print("nm_tags_dict_del[key], nm_tags_dict_ref[key]")
             # print(nm_tags_dict_del[key], nm_tags_dict_ref[key])
@@ -539,4 +503,4 @@ def remove_overlaps(reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_di
                     del reads_dict_del[key]
                     del lengths_dict_del[key]
 
-    return(reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del, N_reads_mapping_both)
+    return(reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del, n_reads_mapping_both)
