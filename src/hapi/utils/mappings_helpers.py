@@ -423,7 +423,7 @@ def min_over_reference_or_32del(
         reads_dict: Union[dict, defaultdict], lengths_dict: dict,
         mapping_all: List[dict], nm_tags_dict: dict, length_threshold: int,
         ol_threshold: int, sample: str, overlap_type: str,
-        position_list: List[int, int], pos: Union[int, Any]) -> Tuple[
+        position_list: list, pos: Union[int, Any]) -> Tuple[
     Union[dict, defaultdict], dict, List[dict], dict]:
     """
     TODO
