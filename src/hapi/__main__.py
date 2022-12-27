@@ -149,9 +149,9 @@ def main():
 
         # 2 - Calculation of the minimum overlapping lengths of the reads
         # In the dataframe df_mapping_all I put all the reads mapping, so both those that map vs reference and those that map vs collapsed
-        reads_dict_ref, lengths_dict_ref, mapping_all, nm_tags_dict_ref = minimum_overlap(bamvsref, "3", position_list_reference, args.adjustment_threshold, mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion)
+        reads_dict_ref, lengths_dict_ref, mapping_all, nm_tags_dict_ref = minimum_overlap(bamvsref, "3", position_list_reference, args.adjustment_threshold, mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion, overlap_type="ref")
         
-        reads_dict_del, lengths_dict_del, mapping_all, nm_tags_dict_del = minimum_overlap(bamvsdel, "3", position_list_deletion, args.adjustment_threshold, mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion)
+        reads_dict_del, lengths_dict_del, mapping_all, nm_tags_dict_del = minimum_overlap(bamvsdel, "3", position_list_deletion, args.adjustment_threshold, mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion, overlap_type="del")
 
         # 3 - Average of the overlapping lengths of all the 4 coordinates couples in the bam vs GRCh37
         reads_dict_ref = average_minimum_overlap(reads_dict_ref)

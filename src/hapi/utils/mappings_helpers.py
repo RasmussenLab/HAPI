@@ -228,7 +228,7 @@ def coverage_dict(dict_snps_cov, snp_id, alt_list):
 
 ############## Part B FUNCTIONS DECLARATION ##############
 
-def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, mapping_all, length_threshold, ol_threshold, sample, fasta_fake, fasta_ref, baq,  min_base_quality=30, min_mapping_quality=30):
+def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, mapping_all, length_threshold, ol_threshold, sample, fasta_fake, fasta_ref, baq, overlap_type, min_base_quality=30, min_mapping_quality=30):
     """
     Function to calculate the minimum length that a read overlaps the:
     - Starting and Ending position of the 32deletion in the bam aligned against the reference genome GRCh37
@@ -249,7 +249,8 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, mappin
     lengths_dict = {}
     nm_tags_dict = {}
     # If the list contains 4 elements --> Bam aligned vs Reference, to detect reads NOT having the deletion
-    if len(position_list) == 4:
+#     if len(position_list) == 4:
+    if overlap_type == "ref":
         # I initialize an empty dictionary in which the values of the keys will be of type list
         reads_dict = defaultdict(list)
         
@@ -263,12 +264,12 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, mappin
               
                 for pileupcolumn in pileupcolumns:
                     
-                    reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, position_list=start_end, pos=pos, min_over_type='ref')
+                    reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, overlap_type, position_list=start_end, pos=pos)
 
         return reads_dict, lengths_dict, mapping_all, nm_tags_dict
 
     # If the list contains 1 element, i.e. P --> Bam aligned vs fake Reference, to detect reads HAVING the deletion
-    elif len(position_list) == 1:
+    elif overlap_type == "del":
 
         reads_dict = {}
         
@@ -276,12 +277,14 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, mappin
                                         fastafile=fasta_fake, start=position_list[0]-1, end=position_list[0])
     
         for pileupcolumn in pileupcolumns:
-            reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, position_list=position_list, pos=None, min_over_type='del')
+            reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, overlap_type, position_list=position_list, pos=None)
+    else:
+        raise ValueError('selected overlap_type is not del or ref')
         
-        return reads_dict, lengths_dict, mapping_all, nm_tags_dict
+    return reads_dict, lengths_dict, mapping_all, nm_tags_dict
 
     
-def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, min_over_type, position_list, pos):
+def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_all, nm_tags_dict, length_threshold, ol_threshold, sample, overlap_type, position_list, pos):
     for pileupread in pileupcolumn.pileups:
         
         # If the read is not a deletion
@@ -308,7 +311,7 @@ def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_
             # I filter for only the reads under the threshold that I set (80 bp)
             if read_length <= length_threshold:
                 
-                if min_over_type == 'ref':
+                if overlap_type == 'ref':
                     S, E = position_list
                     if reference_start <= S and reference_end >= E:
                         # Minimum overlapping length is 32
@@ -322,13 +325,14 @@ def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_
                         min_over = min(left, right)
                 
                 # I calculate the left and right overlaps of the read
-                elif min_over_type == 'del':
+                elif overlap_type == 'del':
                     left = query_position
                     right = reference_end - position_list[0] + 1
 
                     # I assign the minimum overlapping length and I add it with the relative read name to the dictionary
                     min_over = min(left, right)
-                
+                else:
+                    raise ValueError('selected overlap_type is not del or ref')
                 # I save all in a row
 #                 row_to_add = [sample, read_name, reference_start, reference_end, read_sequence, read_length, min_over, nm_tag, min_over_type]
                 
@@ -344,10 +348,12 @@ def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_
 
                     to_add = [int(min_over)]
                     
-                    if min_over_type == 'ref':
+                    if overlap_type == 'ref':
                         reads_dict[read_name].append(int(min_over))
-                    elif min_over_type == 'del':
+                    elif overlap_type == 'del':
                         reads_dict[read_name] = int(min_over)
+                    else:
+                        raise ValueError('selected overlap_type is not del or ref')
                         
                     lengths_dict[read_name] = int(read_length)
 
@@ -363,7 +369,7 @@ def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_
                             "read_length": read_length,
                             "min_over": min_over,
                             "n_mismatches": nm_tag,
-                            "alignment": min_over_type
+                            "alignment": overlap_type
                         }
                     mapping_all.append(row_to_add)
             
