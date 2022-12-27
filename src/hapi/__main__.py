@@ -205,12 +205,12 @@ def main():
         # number of mismatches and the highest overlapping length
         (reads_dict_del, reads_dict_ref, nm_tags_dict_del,
          nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del,
-         n_reads_mapping_both) = remove_overlaps(reads_dict_del,
-                                                 reads_dict_ref,
+         n_reads_mapping_both) = remove_overlaps(reads_dict_del, 
+                                                 reads_dict_ref, 
                                                  nm_tags_dict_del,
-                                                 lengths_dict_ref,
-                                                 lengths_dict_del,
-                                                 nm_tags_dict_ref)
+                                                 nm_tags_dict_ref, 
+                                                 lengths_dict_ref, 
+                                                 lengths_dict_del)
 
         # 3 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 
