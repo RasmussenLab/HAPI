@@ -1,13 +1,27 @@
 import csv
 from pathlib import Path
-
+import argparse
 import pandas as pd
 import pysam
 
+OpenFilesArgsOutput = tuple[pysam.libcalignmentfile.AlignmentFile, 
+                                         pysam.libcalignmentfile.AlignmentFile, 
+                                         pysam.libcfaidx.FastaFile,
+                                         pysam.libcfaidx.FastaFile]
 
 ############## FILES OPENING FUNCTION DECLARATION ##############
 
-def open_files_args(args, sample):
+def open_files_args(args: argparse.Namespace, sample: str) -> OpenFilesArgsOutput:
+    """
+    Open files Bam and Fasta files based on CLI arguments and SNP names
+
+    :param args: CLI script arguments
+    :param sample: SNP name
+    :return: bamvsref, BAM file of the GRCh37 
+    :return: bamsvdel, BAM file of the GRCh37 with deletion 
+    :return: fasta_ref, Fasta File of GRCh37
+    :return: fasta_fake, Fasta File of GRCh37 with deletion
+    """    
     bamvsref_path = Path.joinpath(args.folder_ref,
                                   sample + args.files_extension)
 
@@ -34,37 +48,47 @@ def open_files_args(args, sample):
     return bamvsref, bamvsdel, fasta_ref, fasta_fake
 
 
-def snp_haplo_list(snp_file):
-    """Open file containing the list of the SNPs to analyze and save it in a
-    list. The file was found at this path in computerome 2:
-    /home/projects/cpr_10006/people/s162317/ancient/samtools_mpileup_LD
-    /NyVikinSimon/nucleotideCount/ceu_haplotype86snps_nucleotides.txt """
+def snp_haplo_list(snp_file: str) -> list[list[str]]:
+    """Open file containing the list of the SNPs to analyze and save it in a list. The file was found at this path in computerome 2:
+    /home/projects/cpr_10006/people/s162317/ancient/samtools_mpileup_LD/NyVikinSimon/nucleotideCount/ceu_haplotype86snps_nucleotides.txt"""
 
     with open(snp_file, "r") as file:
         snp_list = [line.strip().split(sep="\t") for line in file]
     return snp_list
 
 
-def dict_to_list(reads_dict):
+def dict_to_list(reads_dict: dict) -> list:
     """
     Convert the reads dictionary to list containing only the average minimum
     overlapping lengths without read names
-    :param reads_dict:
+    :param reads_dict: 
     :return: reads_list: list containing the minimum overlapping lengths of the
     reads from the dictionary
     """
     return [reads_dict[key] for key in sorted(reads_dict.keys())]
 
 
-def write_probdf(prob_df, outdir, sample):
-    """Function to write to file the probability dataframe of the 4 TOP SNPs
-    along with their coverages etc """
+def write_probdf(prob_df: pd.DataFrame, outdir: Path, sample: str) -> None:
+    """
+    Function to write to file the probability dataframe of the 4 TOP SNPs
+    along with their coverages etc
+
+    :param prob_df: probability Dataframe
+    :param outdir: Pathway to the folder where to save results
+    :param sample: the SNP of which prob_df is saved
+    """    
+
     prob_df.to_csv(Path.joinpath(outdir, sample + "top4SNPs_prob_df.tsv"),
                    sep="\t")
 
 
 # I write a file containing the settings that I used to run the script
-def write_settings(args):
+def write_settings(args: argparse.Namespace) -> None:
+    """
+    Write CLI arguments used in the script to the .tsv file 
+
+    :param args: CLI arguments
+    """    
     settings_dict = {arg: str(getattr(args, arg)) for arg in vars(args)}
 
     with open(args.output_folder / "settings.tsv", "w") as settings_file:
@@ -73,7 +97,15 @@ def write_settings(args):
             writer.writerow(row)
 
 
-def write_results(results_filepath, records, header):
+def write_results(results_filepath: Path, records: dict, header: bool) -> bool:
+    """
+    Write the results dict into the .tsv file 
+
+    :param results_filepath: Pathway to the file where save results
+    :param records: dictionary with records to save
+    :param header: bool if use header when saving results
+    :return: bool if use header when saving results next time
+    """    
     if records:
 
         records_df = pd.DataFrame.from_records(records)
@@ -90,7 +122,15 @@ def write_results(results_filepath, records, header):
     return header
 
 
-def averaging_df_column(df, cols_to_group, avg_df_column):
+def averaging_df_column(df: pd.DataFrame, cols_to_group: list[str], avg_df_column: str) -> pd.DataFrame:
+    """
+    Average a column based on grouped columns
+
+    :param df: pd.DataFrame of which column we want to average
+    :param cols_to_group: a list of column names we want to group by
+    :param avg_df_column: a column we want want to average
+    :return: updated pd.DataFrame
+    """
     df = df.assign(
         average_min_over=
         lambda x: x.groupby(cols_to_group)[avg_df_column].transform("mean"))
