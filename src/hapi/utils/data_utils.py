@@ -1,17 +1,20 @@
 import csv
 from pathlib import Path
 import argparse
+from typing import List, Tuple
 import pandas as pd
 import pysam
 
-OpenFilesArgsOutput = tuple[pysam.libcalignmentfile.AlignmentFile, 
-                                         pysam.libcalignmentfile.AlignmentFile, 
-                                         pysam.libcfaidx.FastaFile,
-                                         pysam.libcfaidx.FastaFile]
+
+OpenFilesArgsOutput = Tuple[pysam.libcalignmentfile.AlignmentFile,
+                            pysam.libcalignmentfile.AlignmentFile,
+                            pysam.libcfaidx.FastaFile,
+                            pysam.libcfaidx.FastaFile]
 
 ############## FILES OPENING FUNCTION DECLARATION ##############
 
-def open_files_args(args: argparse.Namespace, sample: str) -> OpenFilesArgsOutput:
+def open_files_args(args: argparse.Namespace,
+                    sample: str) -> OpenFilesArgsOutput:
     """
     Open files Bam and Fasta files based on CLI arguments and SNP names
 
@@ -48,9 +51,11 @@ def open_files_args(args: argparse.Namespace, sample: str) -> OpenFilesArgsOutpu
     return bamvsref, bamvsdel, fasta_ref, fasta_fake
 
 
-def snp_haplo_list(snp_file: str) -> list[list[str]]:
-    """Open file containing the list of the SNPs to analyze and save it in a list. The file was found at this path in computerome 2:
-    /home/projects/cpr_10006/people/s162317/ancient/samtools_mpileup_LD/NyVikinSimon/nucleotideCount/ceu_haplotype86snps_nucleotides.txt"""
+def snp_haplo_list(snp_file: str) -> List[List[str]]:
+    """Open file containing the list of the SNPs to analyze and save it in a
+    list. The file was found at this path in computerome 2:
+    /home/projects/cpr_10006/people/s162317/ancient/samtools_mpileup_LD
+    /NyVikinSimon/nucleotideCount/ceu_haplotype86snps_nucleotides.txt """
 
     with open(snp_file, "r") as file:
         snp_list = [line.strip().split(sep="\t") for line in file]
@@ -122,7 +127,8 @@ def write_results(results_filepath: Path, records: dict, header: bool) -> bool:
     return header
 
 
-def averaging_df_column(df: pd.DataFrame, cols_to_group: list[str], avg_df_column: str) -> pd.DataFrame:
+def averaging_df_column(df: pd.DataFrame, cols_to_group: List[str],
+                        avg_df_column: str) -> pd.DataFrame:
     """
     Average a column based on grouped columns
 

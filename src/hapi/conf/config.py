@@ -36,14 +36,14 @@ def create_parser():
                         default="./results/",
                         help="write the output folder in which to append the results of the probability calculations")
     parser.add_argument("--baq-snps", type=parse_bool, default="False",
-                        required=False)
+                        required=False) #TODO: add help
     parser.add_argument("--baq-deletion", type=parse_bool, default="False",
-                        required=False)
+                        required=False) #TODO: add help
 
-    parser.add_argument("--length-threshold", type=int, required=True)
+    parser.add_argument("--length-threshold", type=int, required=True) # TODO add help
     parser.add_argument("--overlapping-length-threshold", type=int, default=4,
-                        help="overlapping length threshold")
-    parser.add_argument("--perfect-match", type=parse_bool, required=True)
-    parser.add_argument("--adjustment-threshold", type=int, required=True)
+                        help="overlapping length threshold") # TODO add help
+    parser.add_argument("--perfect-match", type=parse_bool, required=True) 
+    parser.add_argument("--adjustment-threshold", type=int, required=True) # TODO add help
 
     return parser
