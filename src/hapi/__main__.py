@@ -66,6 +66,19 @@ from hapi.utils.mappings_helpers import (
 ############## Execution #################
 
 def main():
+    # Specifically for project used variable values
+    
+    # the lists containing the positions I want to check for overlapping reads
+    position_list_reference = [[46414944, 46414975], [46414945, 46414976], [46414946, 46414977], [46414947, 46414978]]
+    position_list_deletion = [46414943]
+    
+    top4_snps_list = ["rs113341849", "rs113010081", "rs11574435", "rs79815064"]
+    chrom = str(3)
+    fetch_start = 46414943
+    fetch_end = 46414980
+    
+    ############################# Starting the script #########################
+    
     # Start time initiation
     start = time()
     
@@ -81,24 +94,11 @@ def main():
     # Initialize empty list and header assignments
     mapping_all = []
     header, header_del, header_ref = True, True, True
-    
-    # Open the samples list
-    samples_list = args.samples_file.read().splitlines()
-
-    # If --haplotype option is activated --> write a table to file containing the reporting of all the 86 SNPs
     if args.haplotype_file:
-         # Initialize empty list and header assignments
         header_hapl, header_hapl_c = True, True
         
-        # e.g. [['rs58697594', '46275570', 'G', 'A', '0.8602'], ['rs73833032', '46276490', 'T', 'C', '0.8602']]
-        # Need to convert this list of lists in another list of just the column names with the format
-        # rs58697594_ref, rs58697594_alt, rs73833032_ref, rs73833032_alt
-        # I contruct the rs_list as a list containing all the 82 SNPs _alt and _ref
-        
-        haplotype_list = snp_haplo_list(args.haplotype_file)
-        rs_list = list(chain.from_iterable((rs_id[0] + "_alt", rs_id[0] + "_ref") for rs_id in haplotype_list))
-        rs_list.sort()
-
+    # Open the samples list
+    samples_list = args.samples_file.read().splitlines()
 
     # For each sample to analyse
     for sample in samples_list:
@@ -109,9 +109,8 @@ def main():
 
         ############## Part 0: If --haplotype option is activated --> write a table to file containing the reporting of all the 86 SNPs
         if args.haplotype_file:
-
             # I report all the SNPs called of the haplotype
-            haplo_results_list, ref_haplo_count_list = some_function(haplotype_list, bamvsref, args.baq_snps, args.adjustment_threshold, args.length_threshold, sample, fasta_ref)
+            haplo_results_list, ref_haplo_count_list = some_function(haplotype_list, bamvsref, chrom, args.baq_snps, args.adjustment_threshold, args.length_threshold, sample, fasta_ref)
 
 
         ############## Part A: Prior Probability calculated as joint probability of top 4 SNPs' posterior probabilities - Execution #################
@@ -122,7 +121,7 @@ def main():
         snp_list = snp_haplo_list(args.snps_file)
 
         # 2 - Calculate Posterior probability of each SNP given each possible Genotype
-        prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov = calc_snps_posteriors(snp_list, bamvsref, fasta_ref, args.baq_snps, args.adjustment_threshold, args.length_threshold)
+        prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov = calc_snps_posteriors(snp_list, bamvsref, chrom, fasta_ref, args.baq_snps, args.adjustment_threshold, args.length_threshold, top4_snps_list)
 
 
         # 3 - Weighted probs calculation: multiply each SNP's probability by the relative Rsquared and store in new columns.
@@ -144,18 +143,14 @@ def main():
 
         ############## Part B: 32bp sequence posterior probabilities - Execution #################
 
-        # 1 - I declare the lists containing the positions I want to check for overlapping reads
-        position_list_reference = [[46414944, 46414975], [46414945, 46414976], [46414946, 46414977], [46414947, 46414978]]
 
-        position_list_deletion = [46414943]
-
-        # 2 - Calculation of the minimum overlapping lengths of the reads
+        # 1 - Calculation of the minimum overlapping lengths of the reads
         # In the dataframe df_mapping_all I put all the reads mapping, so both those that map vs reference and those that map vs collapsed
         reads_dict_ref, lengths_dict_ref, mapping_all, nm_tags_dict_ref = minimum_overlap(bamvsref, "3", position_list_reference, args.adjustment_threshold, mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion, overlap_type="ref")
         
         reads_dict_del, lengths_dict_del, mapping_all, nm_tags_dict_del = minimum_overlap(bamvsdel, "3", position_list_deletion, args.adjustment_threshold, mapping_all, args.length_threshold, args.overlapping_length_threshold, sample, fasta_fake, fasta_ref, baq = args.baq_deletion, overlap_type="del")
 
-        # 3 - Average of the overlapping lengths of all the 4 coordinates couples in the bam vs GRCh37
+        # 2 - Average of the overlapping lengths of all the 4 coordinates couples in the bam vs GRCh37
         reads_dict_ref = average_minimum_overlap(reads_dict_ref)
 
 
@@ -163,13 +158,13 @@ def main():
         # has the lowest number of mismatches and the highest overlapping length                            
         reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del, n_reads_mapping_both = remove_overlaps(reads_dict_del, reads_dict_ref, nm_tags_dict_del, lengths_dict_ref, lengths_dict_del, nm_tags_dict_ref)
 
-        # 4 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
+        # 3 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 
         if args.perfect_match:
-            reads_dict_ref = tag_filtering(bamvsref, reads_dict_ref, lengths_dict_ref)
-            reads_dict_del = tag_filtering(bamvsdel, reads_dict_del, lengths_dict_del)
+            reads_dict_ref = tag_filtering(bamvsref, reads_dict_ref, lengths_dict_ref, chrom, fetch_start, fetch_end)
+            reads_dict_del = tag_filtering(bamvsdel, reads_dict_del, lengths_dict_del, chrom, fetch_start, fetch_end)
 
-        # 5 - Convert the dicts to lists, so it's easier to write in the output file
+        # 4 - Convert the dicts to lists, so it's easier to write in the output file
         reads_list_ref = dict_to_list(reads_dict_ref)
         reads_list_del = dict_to_list(reads_dict_del)
 
@@ -177,33 +172,33 @@ def main():
         lengths_list_ref = dict_to_list(lengths_dict_ref)
         lengths_list_del = dict_to_list(lengths_dict_del)
 
-        # 6 - I calculate p(D|G) for both the bam vs GRCh37 and vs 32del
-        pD_RR_g, pD_RD_g, pD_DD_g = p_D_G_2(reads_dict_ref, "GRCh37")
+        # 5 - I calculate p(D|G) for both the bam vs GRCh37 and vs 32del
+        pD_RR_g, pD_RD_g, pD_DD_g = p_D_G_2(reads_dict_ref, "ref")
         pD_RR_d, pD_RD_d, pD_DD_d = p_D_G_2(reads_dict_del, "del")
 
 
-        # 7 - I calculate the JOINT p(D|G) from the 2 bams
+        # 6 - I calculate the JOINT p(D|G) from the 2 bams
         pD_RR_b, pD_RD_b, pD_DD_b = pD_RR_b_(pD_RR_g, pD_RR_d, pD_RD_g, pD_RD_d, pD_DD_g, pD_DD_d)
 
 
-        # 8 - p(D) calculation
+        # 7 - p(D) calculation
         pD_2_norm, pD_2_r = pD_2_(pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm, pD_RR_b, pD_RD_b, pD_DD_b)
 
-        # 9 - Posterior Probabilities p(G|D) for each "sequence genotype" using the normalized likelihoods
+        # 8 - Posterior Probabilities p(G|D) for each "sequence genotype" using the normalized likelihoods
 
         pRR_D_2_norm = pG_D_2(pRR_D_joint_norm, pD_RR_b, pD_2_norm)
         pRD_D_2_norm = pG_D_2(pRA_D_joint_norm, pD_RD_b, pD_2_norm)
         pDD_D_2_norm = pG_D_2(pAA_D_joint_norm, pD_DD_b, pD_2_norm)
 
-        # 10 - Posterior Probabilities p(G|D) for each "sequence genotype" considering the RANDOM haplotype
+        # 9 - Posterior Probabilities p(G|D) for each "sequence genotype" considering the RANDOM haplotype
         pRR_D_2_r = pG_D_2(0.33, pD_RR_b, pD_2_r)
         pRD_D_2_r = pG_D_2(0.33, pD_RD_b, pD_2_r)
         pDD_D_2_r = pG_D_2(0.33, pD_DD_b, pD_2_r)
 
         
-        # 11 - Make records
+        # 10 - Make records
         
-        records = [{
+        record = {
             "Sample": sample,
             "pRR_Data_n": pRR_D_2_norm,
             "pRD_Data_n": pRD_D_2_norm,
@@ -215,11 +210,7 @@ def main():
             "Lengths_ref": lengths_list_ref,
             "Lengths_del": lengths_list_del,
             "Coverage_ref": coverage_ref,
-            "Coverage_alt": coverage_alt, 
-            "SNP_1_rs113341849": dict_snps_cov["rs113341849"],
-            "SNP_2_rs113010081": dict_snps_cov["rs113010081"],
-            "SNP_3_rs11574435": dict_snps_cov["rs11574435"],
-            "SNP_4_rs79815064": dict_snps_cov["rs79815064"],
+            "Coverage_alt": coverage_alt,
             "p_RR": pRR_D_joint_norm,
             "p_RA": pRA_D_joint_norm,
             "p_AA": pAA_D_joint_norm,
@@ -231,9 +222,12 @@ def main():
             "pRD_Data_r": pRD_D_2_r,
             "pDD_Data_r": pDD_D_2_r,
             "N_reads_mapping_both": n_reads_mapping_both
-        }]
+        }
+        for i, top_snp in enumerate(top4_snps_list):
+            record[f"SNP_{i+1}_{top_snp}"] = dict_snps_cov[top_snp]
+        records = [record]
         
-            
+        
         records_ref, records_del = [], []
         ref_del_references = zip([reads_dict_ref, reads_dict_del], ["ref", "del"], [records_ref, records_del])
         for reads_dict, _class, records_class in ref_del_references:
@@ -247,7 +241,6 @@ def main():
                 records_class.append(result_class)  
         
         # 11 - Append the results to the output file
-        
         header = write_results(results_filepath, records, header)
         header_ref = write_results(args.output_folder / "reads_assigned_ref.tsv", records_ref, header_ref)
         header_del = write_results(args.output_folder / "reads_assigned_del.tsv", records_del, header_del)
