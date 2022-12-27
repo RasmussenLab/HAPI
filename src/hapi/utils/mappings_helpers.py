@@ -249,7 +249,6 @@ def minimum_overlap(bam_file, chrom, position_list, adjustment_threshold, mappin
     lengths_dict = {}
     nm_tags_dict = {}
     # If the list contains 4 elements --> Bam aligned vs Reference, to detect reads NOT having the deletion
-#     if len(position_list) == 4:
     if overlap_type == "ref":
         # I initialize an empty dictionary in which the values of the keys will be of type list
         reads_dict = defaultdict(list)
@@ -356,8 +355,6 @@ def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_
                         raise ValueError('selected overlap_type is not del or ref')
                         
                     lengths_dict[read_name] = int(read_length)
-
-
                     nm_tags_dict[read_name] = int(nm_tag)
                     
                     row_to_add = {
@@ -385,24 +382,10 @@ def average_minimum_overlap(reads_dict):
     for each coordinate couple; dict
     :return: dictionary containing read name - average minimum overlap on the genome as key,values; dict
     """
-    # I create an empty dictionary
-    reads_dict_minimum = {}
-
-    if reads_dict != {}:
-
-        for key, value in reads_dict.items():
-
-            # If the read overlaps across both breakpoints for at least one coordinate couple, set min_over to 32
-            if 32 in value:
-                min_over = 32
-
-            # Else, min_over will be calculate as the average of the minimum overlaps for each coordinate couple
-            else:
-                min_over = mean(value)
-
-            reads_dict_minimum[key] = min_over
-
-    return reads_dict_minimum
+    
+    # If the read overlaps across both breakpoints for at least one coordinate couple, set min_over to 32
+    # Else, min_over will be calculate as the average of the minimum overlaps for each coordinate couple
+    return dict((k, 32) if 32 in v else (k, mean(v)) for k, v in reads_dict.items())
 
 
 
