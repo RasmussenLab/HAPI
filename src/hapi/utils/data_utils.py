@@ -51,24 +51,14 @@ def write_probdf(prob_df, outdir, sample):
     prob_df.to_csv(Path.joinpath(outdir, sample + "top4SNPs_prob_df.tsv"), sep="\t")
 
 # I write a file containing the settings that I used to run the script
-def write_settings():
-    settings_dict = collections.OrderedDict()
-    settings_dict["samples"] = str(args.samples)
-    settings_dict["files-extension"] = args.files_extension
-    settings_dict["folder-ref"] = args.folder_ref
-    settings_dict["folder-fake"] = args.folder_fake
-    settings_dict["fasta-ref"] = str(args.fasta_ref)
-    settings_dict["fasta-fake"] = str(args.fasta_fake)
-    settings_dict["snps"] = str(snp_file)
-    settings_dict["length-threshold"] = str(length_threshold)
-    settings_dict["overlapping-length-threshold"] = str(ol_threshold)
-    settings_dict["perfect-match"] = str(perfect_match)
-    settings_dict["output-folder"] = str(args.output_folder)
-
-
-    with open(args.output_folder + "/settings_" + results_filename , "w") as settings_file:
-        writer = csv.DictWriter(settings_file, fieldnames = ["Option","Chosen"], delimiter="\t")
-        writer.writerows(settings_dict)
+def write_settings(args):
+    
+    settings_dict = {arg: str(getattr(args, arg)) for arg in vars(args)}
+    
+    with open(args.output_folder / "settings.tsv", "w") as settings_file:
+        writer = csv.writer(settings_file, delimiter="\t")
+        for row in settings_dict.items():
+            writer.writerow(row)
 
 
 def write_results(results_filepath, records, header):

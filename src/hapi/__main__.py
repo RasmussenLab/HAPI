@@ -44,7 +44,8 @@ from hapi.utils.data_utils import (
     snp_haplo_list,
     dict_to_list,
     write_probdf,
-    write_results
+    write_results,
+    write_settings
 )
 from hapi.utils.probabilities_helpers import (
     prob_to_weighted,
@@ -85,6 +86,7 @@ def main():
     # Get script arguments
     parser = create_parser()
     args = parser.parse_args()
+    write_settings(args)
     
     # Output folder
     results_filepath = args.output_folder / "results.tsv"
@@ -262,7 +264,7 @@ def main():
     # I need to average the overlapping lengths of the ref
     df_mapping_all.to_csv(args.output_folder / "all_reads_mapping.tsv", sep="\t", quoting=csv.QUOTE_NONE, index = False)
 
-        
+    
     end = time()
     length = end - start
     print("Time:", length)
