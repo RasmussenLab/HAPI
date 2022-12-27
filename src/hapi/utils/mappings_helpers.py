@@ -87,9 +87,7 @@ def extract_lists(pileupcolumn, ref, alt, length_threshold, reads_list, other_li
             # I save the read name, the read base that map to the position, and the base quality
             read_name = pileupread.alignment.query_name
             base = pileupread.alignment.query_sequence[pileupread.query_position]
-
             quality = pileupread.alignment.query_alignment_qualities[pileupread.query_position]
-
             read_length = pileupread.alignment.query_length
             
             read_info_list = [base, quality, read_name, read_length]
@@ -331,10 +329,7 @@ def min_over_reference_or_32del(pileupcolumn, reads_dict, lengths_dict, mapping_
                     # I assign the minimum overlapping length and I add it with the relative read name to the dictionary
                     min_over = min(left, right)
                 else:
-                    raise ValueError('selected overlap_type is not del or ref')
-                # I save all in a row
-#                 row_to_add = [sample, read_name, reference_start, reference_end, read_sequence, read_length, min_over, nm_tag, min_over_type]
-                
+                    raise ValueError('selected overlap_type is not del or ref')                
                 
                 df_length = len(mapping_all)
                 
@@ -386,8 +381,6 @@ def average_minimum_overlap(reads_dict):
     # If the read overlaps across both breakpoints for at least one coordinate couple, set min_over to 32
     # Else, min_over will be calculate as the average of the minimum overlaps for each coordinate couple
     return dict((k, 32) if 32 in v else (k, mean(v)) for k, v in reads_dict.items())
-
-
 
 
 def tag_filtering(bamfile, reads_dict, lengths_dict):

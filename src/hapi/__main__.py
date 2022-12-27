@@ -33,6 +33,8 @@ reference_end: not converted because it's in 0-based exclusive
 import csv
 from itertools import chain
 from time import time
+import warnings
+warnings.filterwarnings(action='ignore', category=UserWarning)
 
 import pandas as pd
 
