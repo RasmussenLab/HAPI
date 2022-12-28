@@ -144,7 +144,7 @@ def prob_to_weighted(prob_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def calc_prob_joint(prob_df: pd.DataFrame) -> Tuple[
-    np.float, np.float, np.float]:
+    float, float, float]:
     """
     Calculate Joint Posterior Probabilities of all the SNPs and normalize them
     :param prob_df:
@@ -172,9 +172,8 @@ def calc_prob_joint(prob_df: pd.DataFrame) -> Tuple[
 
     # These will be used as the prior probability in the formula to
     # calculate the Posterior of the deletion and the reference
-    pRR_D_joint_norm = normalized[0]
-    pRA_D_joint_norm = normalized[1]
-    pAA_D_joint_norm = normalized[2]
+
+    pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm = normalized
 
     return pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm
 
@@ -253,8 +252,8 @@ def p_D_G_2(reads_dict: dict, which_bam: str) -> Tuple[float, float, float]:
 
 
 # p(D)
-def pD_2_(pRR_D_joint_norm: np.float, pRA_D_joint_norm: np.float,
-          pAA_D_joint_norm: np.float,
+def pD_2_(pRR_D_joint_norm: float, pRA_D_joint_norm: float,
+          pAA_D_joint_norm: float,
           pD_RR_b: float, pD_RD_b: float, pD_DD_b: float) -> Tuple[
     float, float]:
     """
