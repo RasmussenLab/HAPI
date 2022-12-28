@@ -1,24 +1,34 @@
 import math
+from typing import Tuple
 import numpy as np
+import pandas as pd
 
-def phred2prob(x):
-    """Convert Phred score to probability"""
+
+def phred2prob(x: int):
+    """
+    Convert Phred score to probability
+
+    :param x: Phred score
+    :return: probability
+    """
+    """"""
     return 10 ** (-x / 10)
 
 
-def prob2phred(x):
+def prob2phred(x: float) -> float:
     """Convert probability to Phred score"""
     return -10 * math.log10(x)
 
-def pD_G_(reads_list, ref, alt):
+
+def pD_G_(reads_list: list, ref: str, alt: str) -> Tuple[float, float, float]:
     """
     Calculate step 1, 2, and 3 of genotype likelihood for each SNP
     :param reads_list: list of read bases mapping each of the CEU rs33
         haplotype SNPs; list
-    :param ref: reference allele; string
-    :param alt: alternate allele; string
+    :param ref: reference allele
+    :param alt: alternate allele
     :return: pD_RR, pD_RA, pD_AA: genotypes likelihoods, i.e. probability of
-        the data given each genotype; float
+        the data given each genotype
     """
 
     # Here with RR, RA, and AA I actually mean RR,RD,DD, so the deletion
@@ -63,7 +73,6 @@ def pD_G_(reads_list, ref, alt):
     return 10 ** pD_RR, 10 ** pD_RA, 10 ** pD_AA
 
 
-
 # SNPs genotype calculation
 # pD_G = p(D|G) likelihood
 # pG_D = p(G|D)
@@ -73,18 +82,17 @@ def pD_G_(reads_list, ref, alt):
 # p(D|G)
 
 
-
 # p(D)
-def pD_(pD_RR, pD_RA, pD_AA):
+def pD_(pD_RR: float, pD_RA: float, pD_AA: float) -> float:
     """
     p(D) = SUM p(Gi) p(D|Gi), for each genotype RR, RA, AA. Here we assume a
     uniform prior distribution, giving it a value of 0.33
     :param pD_RR: likelihood of getting the observed Data given the Genotype
-        Ref Ref, calculated in the function pD_G_ ; float
+        Ref Ref, calculated in the function pD_G_
     :param pD_RA: likelihood of getting the observed Data given the Genotype
-        Ref Alt, calculated in the function pD_G_ ; float
+        Ref Alt, calculated in the function pD_G_
     :param pD_AA: likelihood of getting the observed Data given the Genotype
-        Alt Alt, calculated in the function pD_G_ ; float
+        Alt Alt, calculated in the function pD_G_
     :return: pD: p(D)= SUM p(Gi) p(D|Gi)
     """
 
@@ -93,15 +101,16 @@ def pD_(pD_RR, pD_RA, pD_AA):
 
 
 # p(G|D)
-def pG_D_(pD_RR, pD_RA, pD_AA, pD, pG=0.33):
+def pG_D_(pD_RR: float, pD_RA: float, pD_AA: float, pD: float,
+          pG: float = 0.33) -> Tuple[float, float, float]:
     """
     Posterior probability of the specific base
     :param pD_RR: likelihood of getting the observed Data given the Genotype
-        Ref Ref, calculated in the function pD_G_ ; float
+        Ref Ref, calculated in the function pD_G_
     :param pD_RA: likelihood of getting the observed Data given the Genotype
-        Ref Alt, calculated in the function pD_G_ ; float
+        Ref Alt, calculated in the function pD_G_
     :param pD_AA: likelihood of getting the observed Data given the Genotype
-        Alt Alt, calculated in the function pD_G_ ; flo
+        Alt Alt, calculated in the function pD_G_
     :param pD: p(D)
     :param pG: prior probability. Here we assume a uniform prior, so 0.33
     :return: pRR_D, pRA_D, pAA_D
@@ -111,11 +120,10 @@ def pG_D_(pD_RR, pD_RA, pD_AA, pD, pG=0.33):
     pRA_D = (pD_RA * pG) / pD
     pAA_D = (pD_AA * pG) / pD
 
-
     return pRR_D, pRA_D, pAA_D
 
 
-def prob_to_weighted(prob_df):
+def prob_to_weighted(prob_df: pd.DataFrame) -> pd.DataFrame:
     """
     Add, to the dataframe prob_df, columns containing the probabilities of each
         SNP multiplied by each relative R squared value
@@ -135,8 +143,8 @@ def prob_to_weighted(prob_df):
     return prob_df
 
 
-
-def calc_prob_joint(prob_df):
+def calc_prob_joint(prob_df: pd.DataFrame) -> Tuple[
+    np.float, np.float, np.float]:
     """
     Calculate Joint Posterior Probabilities of all the SNPs and normalize them
     :param prob_df:
@@ -171,8 +179,8 @@ def calc_prob_joint(prob_df):
     return pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm
 
 
-
-def pD_RR_b_(pD_RR_g, pD_RR_d, pD_RD_g, pD_RD_d, pD_DD_g, pD_DD_d):
+def pD_RR_b_(pD_RR_g: float, pD_RR_d: float, pD_RD_g: float, pD_RD_d: float,
+             pD_DD_g: float, pD_DD_d: float) -> Tuple[float, float, float]:
     """
     Joint likelihoods from both the bam files, vs GRCH37 and vs Fake
     :return: pD_RR_b, pD_RD_b, pD_DD_b
@@ -184,8 +192,6 @@ def pD_RR_b_(pD_RR_g, pD_RR_d, pD_RD_g, pD_RD_d, pD_DD_g, pD_DD_d):
     return pD_RR_b, pD_RD_b, pD_DD_b
 
 
-
-
 # 32bp sequence posterior probabilities genotype calculation
 # pD_G_2 = p(D|G) likelihood
 # pD_2 = p(D)
@@ -193,18 +199,17 @@ def pD_RR_b_(pD_RR_g, pD_RR_d, pD_RD_g, pD_RD_d, pD_DD_g, pD_DD_d):
 # p(G|D) = p(G) * p(D|G) / p(D)
 
 # p(D|G)
-def p_D_G_2(reads_dict, which_bam):
+def p_D_G_2(reads_dict: dict, which_bam: str) -> Tuple[float, float, float]:
     """
     Calculate p(D|G), i.e. the probability of the data (the reads) given the
     Genotype, i.e. that the sample has RR, RD, or DD genotype
     :param reads_dict:
-    :param which_bam: to specify which bam I want to analyze; string
+    :param which_bam: to specify which bam I want to analyze
     :return:
     """
     # p_ref_r = p(ref|r), i.e. the probability of having the reference
     # sequence given the observed read p_del_r = p(del|r), i.e. the
     # probability of having the deleted sequence given the observed read
-
 
     pD_RR_list, pD_RD_list, pD_DD_list = [], [], []
 
@@ -212,7 +217,7 @@ def p_D_G_2(reads_dict, which_bam):
     # overlapping the region
     if reads_dict != {}:
         for key, value in reads_dict.items():
-            
+
             # Step 1: calculate prob of reference or deleted sequence given
             # the observed read
             if which_bam == "ref":
@@ -221,7 +226,7 @@ def p_D_G_2(reads_dict, which_bam):
             elif which_bam == "del":
                 p_del_r = 1 - (1 / value) ** 2
                 p_ref_r = (1 - p_del_r) / 2
-                
+
             # Step 2: calculate prob of Data, of reads, given each possible
             # genotype, so Ref/Ref, Ref/Del, Del/Del
             # Step 3: multiply (in this case sum, since they are logarithms),
@@ -232,11 +237,10 @@ def p_D_G_2(reads_dict, which_bam):
             pD_RD_list.append((p_ref_r + p_del_r) / 2)
             pD_DD_list.append(p_del_r)
 
-
         pD_RR = np.prod(pD_RR_list)
         pD_RD = np.prod(pD_RD_list)
         pD_DD = np.prod(pD_DD_list)
-        
+
     # If the dict is empty, there are no reads mapping to the region
     else:
 
@@ -247,9 +251,12 @@ def p_D_G_2(reads_dict, which_bam):
 
     return pD_RR, pD_RD, pD_DD
 
+
 # p(D)
-def pD_2_(pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm,
-          pD_RR_b, pD_RD_b, pD_DD_b):
+def pD_2_(pRR_D_joint_norm: np.float, pRA_D_joint_norm: np.float,
+          pAA_D_joint_norm: np.float,
+          pD_RR_b: float, pD_RD_b: float, pD_DD_b: float) -> Tuple[
+    float, float]:
     """
     p(D) = SUM p(Gi) p(D|Gi), for each genotype RR, RD, DD. As a prior I'll
     use the posterior probability for the rs333 haplotype that I calculated
@@ -267,8 +274,7 @@ def pD_2_(pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm,
 
 
 # p(G|D)
-def pG_D_2(pG, pD_G, pD):
-
+def pG_D_2(pG: float, pD_G: float, pD: float) -> float:
     pG_D_2 = (pG * pD_G) / pD
 
     return pG_D_2
