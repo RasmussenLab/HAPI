@@ -331,7 +331,7 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
                     chrom: str, position_list: list, adjustment_threshold: int,
                     mapping_all, length_threshold: int, ol_threshold: int,
                     sample: str,
-                    fasta_fake: pysam.libcfaidx.FastaFile,
+                    fasta_coll: pysam.libcfaidx.FastaFile,
                     fasta_ref: pysam.libcfaidx.FastaFile, baq: bool,
                     overlap_type: str,
                     min_base_quality: int = 30,
@@ -342,7 +342,7 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
     Starting and Ending position of the 32deletion in the bam aligned
     against the reference genome GRCh37 --> To find reads NOT HAVING the
     deletion, i.e. having the reference 32bp sequence - Position breakpoint
-    of the 32deletion in the bam aligned against the fake 32del reference
+    of the 32deletion in the bam aligned against the coll 32del reference
     --> To find reads HAVING the deletion, i.e. not having the reference
     32bp sequence
 
@@ -355,7 +355,7 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
     :param length_threshold: TODO
     :param ol_threshold: TODO
     :sample: a SNP
-    :fasta_fake: Fasta File of the genome with deletion
+    :fasta_coll: Fasta File of the genome with deletion
     :fasta_ref: Fasta File of the genome 
     :param baq: base alignment quality filtering; string
     :param overlap_type: is it reference or deletion
@@ -394,7 +394,7 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
                         nm_tags_dict, length_threshold, ol_threshold, sample,
                         overlap_type, position_list=start_end, pos=pos)
 
-    # If the list contains 1 element, i.e. P --> Bam aligned vs fake
+    # If the list contains 1 element, i.e. P --> Bam aligned vs coll
     # Reference, to detect reads HAVING the deletion
     elif overlap_type == "del":
 
@@ -403,7 +403,7 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
         pileupcolumns = get_pilecolumns(bam_file, baq, chrom, min_base_quality,
                                         adjustment_threshold,
                                         min_mapping_quality,
-                                        fastafile=fasta_fake,
+                                        fastafile=fasta_coll,
                                         start=position_list[0] - 1,
                                         end=position_list[0])
 

@@ -181,7 +181,7 @@ def calc_prob_joint(prob_df: pd.DataFrame) -> Tuple[
 def pD_RR_b_(pD_RR_g: float, pD_RR_d: float, pD_RD_g: float, pD_RD_d: float,
              pD_DD_g: float, pD_DD_d: float) -> Tuple[float, float, float]:
     """
-    Joint likelihoods from both the bam files, vs GRCH37 and vs Fake
+    Joint likelihoods from both the bam files, vs GRCH37 and vs coll
     :return: pD_RR_b, pD_RD_b, pD_DD_b
     """
     pD_RR_b = pD_RR_g * pD_RR_d

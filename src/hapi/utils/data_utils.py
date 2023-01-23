@@ -23,32 +23,32 @@ def open_files_args(args: argparse.Namespace,
     :return: bamvsref, BAM file of the GRCh37 
     :return: bamsvdel, BAM file of the GRCh37 with deletion 
     :return: fasta_ref, Fasta File of GRCh37
-    :return: fasta_fake, Fasta File of GRCh37 with deletion
+    :return: fasta_coll, Fasta File of GRCh37 with deletion
     """    
     bamvsref_path = Path.joinpath(args.folder_ref,
                                   sample + args.files_extension)
 
-    bamvsdel_path = Path.joinpath(args.folder_fake,
+    bamvsdel_path = Path.joinpath(args.folder_coll,
                                   sample + args.files_extension)
 
     # Loading the bam file aligned vs the reference GRCh37 genome
     bamvsref = pysam.AlignmentFile(bamvsref_path, "rc",
                                    reference_filename=str(args.fasta_ref_file))
 
-    # Loading the bam file aligned vs the fake reference 32del bamvsdel =
+    # Loading the bam file aligned vs the coll reference 32del bamvsdel =
     # pysam.AlignmentFile(bamvsdel_file, "rc", reference_filename =
     # "/home/projects/cpr_10006/projects/ccr5/refs/CCR5_del32_120b.fasta")
 
     bamvsdel = pysam.AlignmentFile(bamvsdel_path, "rc", reference_filename=str(
-        args.fasta_fake_file))
+        args.fasta_coll_file))
 
     # Loading the reference GRCh37 fasta file
     fasta_ref = pysam.FastaFile(args.fasta_ref_file)
 
-    # Loading the fake GRCh37 fasta file
-    fasta_fake = pysam.FastaFile(args.fasta_fake_file)
+    # Loading the coll GRCh37 fasta file
+    fasta_coll = pysam.FastaFile(args.fasta_coll_file)
 
-    return bamvsref, bamvsdel, fasta_ref, fasta_fake
+    return bamvsref, bamvsdel, fasta_ref, fasta_coll
 
 
 def snp_haplo_list(snp_file: str) -> List[List[str]]:
