@@ -15,7 +15,7 @@ calculation of the next step.
 B) Deletion and Reference sequence probability calculation
 
 Each ancient sample DNA has been aligned against the reference genome GRCh37
-and against a fake reference containing the 32 bp deletion in the ccr5 gene.
+and against a Collapsed reference containing the 32 bp deletion in the ccr5 gene.
 For both of these bams I want to calculate the probability of having the
 deletion and of having the reference sequence, following the genotype strategy
 of point A. In particular, I'll calculate the probability of each possible
@@ -117,7 +117,7 @@ def main():
         print(sample)
 
         # I parse the arguments given when executing the script
-        bamvsref, bamvsdel, fasta_ref, fasta_fake = open_files_args(args,
+        bamvsref, bamvsdel, fasta_ref, fasta_coll = open_files_args(args,
                                                                     sample)
 
         # Part 0: If --haplotype option is activated --> write a table to file
@@ -180,7 +180,7 @@ def main():
                                              args.length_threshold,
                                              args.overlapping_length_threshold,
                                              sample,
-                                             fasta_fake,
+                                             fasta_coll,
                                              fasta_ref,
                                              baq=args.baq_deletion,
                                              overlap_type="ref")
@@ -193,7 +193,7 @@ def main():
                                              args.length_threshold,
                                              args.overlapping_length_threshold,
                                              sample,
-                                             fasta_fake,
+                                             fasta_coll,
                                              fasta_ref,
                                              baq=args.baq_deletion,
                                              overlap_type="del")
