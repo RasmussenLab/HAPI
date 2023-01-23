@@ -22,10 +22,9 @@ def get_pilecolumns(bam_file: pysam.libcalignmentfile.AlignmentFile, baq: bool,
                     start: int,
                     end: int) -> pysam.libcalignmentfile.IteratorColumnRegion:
     """
-    Makes an object with extracted read bases to TODO
-
+    Makes an object with the extracted reads mapping to the genomic coordinate
     :param bam_file: bam file 
-    :param baq: TODO
+    :param baq: whether to perform BAQ (base alignment quality) calculation
     :param chrom: chromosome number of the position to extract
     :param min_base_quality: base quality
     :param adjustment_threshold: adjust mapping quality.
@@ -34,8 +33,11 @@ def get_pilecolumns(bam_file: pysam.libcalignmentfile.AlignmentFile, baq: bool,
     :param start: start position were pileup is performed
     :param end: start position were pileup is performed
     :raises ValueError: Raises error if baq is not True or False
-    :return: Iterator object TODO
+    :return: Iterator object pysam pileup object: an iterable which represents all the reads in the SAM file that map to a single base in the reference sequence.
+    The list of reads are represented as PileupRead objects in the PileupColumn.pileups property
     """
+    # Each iteration returns a PileupColumn which represents all the reads in the SAM file that map to a single base in 
+    # the reference sequence. 
     if baq == False:
         pileupcolumns = bam_file.pileup(chrom, start, end, truncate=True,
                                         min_base_quality=min_base_quality,
