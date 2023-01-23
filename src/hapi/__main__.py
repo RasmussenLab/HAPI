@@ -76,7 +76,9 @@ from hapi.utils.mappings_helpers import (
 
 def main():
     ### Specifically for project used variable values ###
-    # the lists containing the positions I want to check for overlapping reads
+    # Lists containing the positions to check for overlapping reads
+    # N.B. the CCR5delta32 deletion (rs333) has 4 different coordinate representations
+    # (see https://varsome.com/variant/hg19/rs333?annotation-mode=germline)
     position_list_reference = [[46414944, 46414975], [46414945, 46414976],
                                [46414946, 46414977], [46414947, 46414978]]
     position_list_deletion = [46414943]
