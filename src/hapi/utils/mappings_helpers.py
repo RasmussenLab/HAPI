@@ -555,8 +555,8 @@ def perfect_match_filtering(bamfile: pysam.libcalignmentfile.AlignmentFile,
         minimum overlaps
     :param lengths_dict: dictionary containing each read with its minimum length with which it overlaps the deletion or reference coordinates
     :param chrom: chromosome number of the position to extract
-    :param start: TODO
-    :param end: TODO
+    :param start: starting coordinate of the deletion (46414943) in the Collapsed reference
+    :param end: ending coordinate of the deletion (46414980) in the Collapsed reference
     :param reads_dict: the dictionary containing the reads with their
         minimum overlaps
     """
@@ -577,16 +577,17 @@ def perfect_match_filtering(bamfile: pysam.libcalignmentfile.AlignmentFile,
     return reads_dict
 
 
-def some_function(haplotype_list: List[str],
+def snps_reporting(haplotype_list: List[str],
                   bamvsref: pysam.libcalignmentfile.AlignmentFile, chrom: str,
                   baq_snp: bool,
                   adjustment_threshold: int, length_threshold: int,
                   sample: str, fasta_ref: pysam.libcfaidx.FastaFile) -> Tuple[
     List[dict], List[dict]]:
     """ -> tuple[list[dict], list[dict]]
-    TODO
+    Function to save the info about each SNP from the haplotype list. Not needed for HAPI, function created
+    just to have the equivalent of what Kirstine was doing before I started to work on the project.
 
-    :param haplotype_list: list of the 86 SNPs
+    :param haplotype_list: list of the haplotype SNPs
     :param bamvsref: bam file
     :param chrom: chromosome number of the position to extract
     :param baq_snp: whether to perform BAQ (base alignment quality) calculation on the SNPs
@@ -594,8 +595,8 @@ def some_function(haplotype_list: List[str],
     :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
     :param sample: SNP
     :param fasta_ref: Fasta File of the genome with deletion
-    :return: haplo_results_list, TODO
-    :return: ref_haplo_count_list, TODO
+    :return: haplo_results_list: list with each sample and its reference and alternate bases called for each snp
+    :return: ref_haplo_count_list: list with each sample and its referencecount, purereferenceount, haplocount, purehaplocount, notavail
     """
 
     # I initialize dictionary where I'll store the reference and alternate
@@ -672,15 +673,14 @@ def remove_overlaps(reads_dict_del: dict, reads_dict_ref: dict,
                     lengths_dict_del: dict) -> Tuple[
     dict, dict, dict, dict, dict, dict, int]:
     """ 
-    TODO
-
-    :param reads_dict_del: the dictionary containing the reads with their
-        minimum overlaps for del genome
-    :param reads_dict_ref: TODO
+    In case there are reads that overlap both the reference and the Collapsed genome, I'll keep only the one that has the lowest
+    number of mismatches and the highest overlapping length
+    :param reads_dict_del: dictionary containing each read mapping to the Collapsed genome
+    :param reads_dict_ref: dictionary containing each read mapping to the Reference genome
     :param nm_tags_dict_del: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the Collapsed reference. See param spec of function minimum_overlap for more details
     :param nm_tags_dict_ref: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the reference. See param spec of function minimum_overlap for more details
-    :param lengths_dict_ref: TODO
-    :param lengths_dict_del: TODO
+    :param lengths_dict_ref: dictionary containing each read mapping to the Reference genome with its length
+    :param lengths_dict_del: dictionary containing each read mapping to the Collapsed genome with its length
     """
     n_reads_mapping_both = 0
 
