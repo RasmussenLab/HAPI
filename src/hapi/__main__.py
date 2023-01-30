@@ -217,11 +217,11 @@ def main():
         # 3 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 
         if args.perfect_match:
-            reads_dict_ref = tag_filtering(bamvsref, reads_dict_ref,
+            reads_dict_ref = perfect_match_filtering(bamvsref, reads_dict_ref,
                                            lengths_dict_ref, chrom,
                                            fetch_start, fetch_end)
 
-            reads_dict_del = tag_filtering(bamvsdel, reads_dict_del,
+            reads_dict_del = perfect_match_filtering(bamvsdel, reads_dict_del,
                                            lengths_dict_del, chrom,
                                            fetch_start, fetch_end)
 

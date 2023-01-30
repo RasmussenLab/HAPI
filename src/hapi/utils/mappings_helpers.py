@@ -73,10 +73,10 @@ def extr_rbases_bam(bamvsref_file: pysam.libcalignmentfile.AlignmentFile,
     :param coordinate: coordinate of the position to extract
     :param ref: reference allele at the position
     :param alt: alternate allele at the position
-    :param baq: TODO
+    :param baq: whether to perform BAQ (base alignment quality) calculation
     :param fasta_ref: Fasta File of the genome with deletion
     :param adjustment_threshold: adjust mapping quality.
-    :param length_threshold: TODO
+    :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
     :param min_base_quality: mapping quality
     :param min_mapping_quality: base alignment quality filtering
     :return: reads_list, read bases that at the position correspond to
@@ -118,10 +118,10 @@ def extract_lists(pileupcolumn: pysam.libcalignedsegment.PileupColumn,
     file, the read will be put in the object "reads_list". If not, the read
     will be put in the "other_list"
 
-    :param pileupcolumn: TODO
+    :param pileupcolumn: pysam PileupColumn object which represents all the reads in the SAM file that map to a single base from the reference sequence. 
     :param ref: reference allele at the position
     :param alt: alternate allele at the position
-    :param length_threshold: TODO
+    :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
     :param reads_list: read bases that at the position correspond to
         either the Reference or Alternate allele 
     :param other_list: read bases that at the position do not correspond to
@@ -196,9 +196,9 @@ def calc_snps_posteriors(snp_list: list,
     :param bamvsref: bam file 
     :param chrom: chromosome number of the position to extract
     :param fasta_ref: Fasta File of the genome 
-    :param baq_snp: TODO
+    :param baq_snp: whether to perform BAQ (base alignment quality) calculation on the SNPs
     :param adjustment_threshold: adjust mapping quality.
-    :param length_threshold: TODO
+    :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
     :param top4_snps_list: list of the 4 top SNPs
 
     :return: prob_df, dataframe containing the probabilities
@@ -350,12 +350,11 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
 
     :param bam_file: bam file
     :param chrom: chromosome number
-    :param position_list: list containing the 4 different Starting and Ending
-        coordinates or the Position coordinate
+    :param position_list: list containing the 4 different Starting and Ending coordinates of the deletion in the Reference or the unique Starting and Ending coordinates in the Collapsed Reference
     :param adjust_threshold: adjust mapping quality.
     :param mapping_all: a list of dicts with stored reseults
-    :param length_threshold: TODO
-    :param ol_threshold: TODO
+    :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
+    :param number of nucleotides with which each read needs to overlap the deletion or reference coordinates in order to be kept
     :sample: a SNP
     :fasta_coll: Fasta File of the genome with deletion
     :fasta_ref: Fasta File of the genome 
@@ -365,9 +364,10 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
     :param min_mapping_quality: mapping quality
 
     :return: reads_dict: the dictionary containing reads with their minimum overlaps
-    :return: lengths_dict: TODO
+    :return: lengths_dict: dictionary containing each read with its minimum length with which it overlaps the deletion or reference coordinates
     :return: mapping_all: a list of dicts with stored reseults
-    :return: nm_tags_dict: TODO
+    :return: nm_tags_dict: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the reference 
+             Needed for the function remove_overlaps, with which, if there are reads that overlap both the reference and the collapsed genome, I'll keep only the one that has the lowest number of mismatches and the highest overlapping length
     """
     lengths_dict = {}
     nm_tags_dict = {}
@@ -396,8 +396,8 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
                         nm_tags_dict, length_threshold, ol_threshold, sample,
                         overlap_type, position_list=start_end, pos=pos)
 
-    # If the list contains 1 element, i.e. P --> Bam aligned vs coll
-    # Reference, to detect reads HAVING the deletion
+    # If the list contains 1 element, i.e. P --> Bam aligned vs Collapsed Reference, 
+    # to detect reads HAVING the deletion
     elif overlap_type == "del":
 
         reads_dict = {}
@@ -428,25 +428,26 @@ def min_over_reference_or_32del(
         position_list: list, pos: Union[int, Any]) -> Tuple[
     Union[dict, defaultdict], dict, List[dict], dict]:
     """
-    TODO
-
-    :param pileupcolumn: TODO
+    Function to extract each read from the pileupcolumn and calculate the the minimum overlapping length with which it maps to the Reference or to the
+    Collapsed Reference, number of mismatches, read length, read sequence etc to save everything in a file
+    :param pileupcolumn: pysam PileupColumn object which represents all the reads in the SAM file that map to a single base from the reference sequence. 
     :param reads_dict: the dictionary containing reads with their minimum overlaps
-    :param lengths_dict: TODO
+    :param lengths_dict: dictionary containing each read with its minimum length with which it overlaps the deletion or reference coordinates
     :param mapping_all: a list of dicts with stored reseults
-    :param nm_tags_dict: TODO
-    :param length_threshold: TODO
-    :param ol_threshold: TODO
+    :param nm_tags_dict: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the reference. See param spec of function minimum_overlap for more details
+    :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
+    :param number of nucleotides with which each read needs to overlap the deletion or reference coordinates in order to be kept
     :param sample: a SNP
     :param overlap_type: is it reference or deletion
-    :param position_list: TODO
-    :param pos: TODO
+    :param position_list: list containing the 4 different Starting and Ending coordinates of the deletion in the Reference or the unique Starting and Ending coordinates in the Collapsed Reference
+    :param pos: used to iterate over the positions list
     :return: reads_dict: the dictionary containing the reads with their
         minimum overlaps
-    :return: lengths_dict: TODO
+    :return: lengths_dict: dictionary containing each read with its minimum length with which it overlaps the deletion or reference coordinates
     :return: mapping_all: a list of dicts with stored reseults
-    :return: nm_tags_dict: TODO
+    :return: nm_tags_dict: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the reference. See param spec of function minimum_overlap for more details
     """
+
 
     for pileupread in pileupcolumn.pileups:
 
@@ -471,7 +472,7 @@ def min_over_reference_or_32del(
 
             nm_tag = pileupread.alignment.get_tag("NM")
 
-            # Filter for only the reads under the threshold that I set (80 bp)
+            # Filter for only the reads under the threshold that I set (1000 bp, i.e. not filtering cause no read will be longer than 1000)
             if read_length <= length_threshold:
 
                 if overlap_type == 'ref':
@@ -543,23 +544,23 @@ def average_minimum_overlap(reads_dict: Union[dict, defaultdict]) -> dict:
         (k, 32) if 32 in v else (k, mean(v)) for k, v in reads_dict.items())
 
 
-def tag_filtering(bamfile: pysam.libcalignmentfile.AlignmentFile,
+def perfect_match_filtering(bamfile: pysam.libcalignmentfile.AlignmentFile,
                   reads_dict: Union[dict, defaultdict], lengths_dict: int,
                   chrom: str, start: int, end: int) -> Union[
     dict, defaultdict]:
     """
-    TODO
-
+    Function to keep only the reads with the perfect matching 
     :param bamfile: bam file
     :param reads_dict: the dictionary containing the reads with their
         minimum overlaps
-    :param lengths_dict: Todo
+    :param lengths_dict: dictionary containing each read with its minimum length with which it overlaps the deletion or reference coordinates
     :param chrom: chromosome number of the position to extract
     :param start: TODO
     :param end: TODO
     :param reads_dict: the dictionary containing the reads with their
         minimum overlaps
     """
+
     # For each read name in reads_dict:
     for key in reads_dict.keys():
 
@@ -588,9 +589,9 @@ def some_function(haplotype_list: List[str],
     :param haplotype_list: list of the 86 SNPs
     :param bamvsref: bam file
     :param chrom: chromosome number of the position to extract
-    :param baq_snp: TODO
+    :param baq_snp: whether to perform BAQ (base alignment quality) calculation on the SNPs
     :param adjustment_threshold: adjust mapping quality.
-    :param length_threshold: TODO
+    :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
     :param sample: SNP
     :param fasta_ref: Fasta File of the genome with deletion
     :return: haplo_results_list, TODO
@@ -676,9 +677,8 @@ def remove_overlaps(reads_dict_del: dict, reads_dict_ref: dict,
     :param reads_dict_del: the dictionary containing the reads with their
         minimum overlaps for del genome
     :param reads_dict_ref: TODO
-    :param nm_tags_dict_del: TODO
-    :param nm_tags_dict_ref: the dictionary containing the reads with their
-        minimum overlaps for ref genome
+    :param nm_tags_dict_del: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the Collapsed reference. See param spec of function minimum_overlap for more details
+    :param nm_tags_dict_ref: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the reference. See param spec of function minimum_overlap for more details
     :param lengths_dict_ref: TODO
     :param lengths_dict_del: TODO
     """

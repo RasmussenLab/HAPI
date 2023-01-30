@@ -41,8 +41,8 @@ def create_parser():
                         help="option to perform Base alignment quality (BAQ) in samtools for the reads mapping to the deletion. Default is False")
 
     parser.add_argument("--length-threshold", type=int, required=True, default=1000,
-                        help="value to keep only reads with read length < length_threshold. Not used in the final script")
-    parser.add_argument("--overlapping-length-threshold", type=int, required=False, default=4,
+                        help="value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed")
+    parser.add_argument("--overlapping-length-threshold", type=int, required=False, default=6,
                         help="number of nucleotides with which each read needs to overlap the deletion or reference coordinates in order to be kept")
     parser.add_argument("--perfect-match", type=parse_bool, required=False, default=False,
                         help="option to keep only reads with perfect match to the  genome. Not used in the final script") 
