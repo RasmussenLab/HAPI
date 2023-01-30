@@ -125,7 +125,7 @@ def main():
         if args.haplotype_file:
             # I report all the SNPs called of the haplotype
             (haplo_results,
-             ref_haplo_count) = some_function(haplotype_list, bamvsref,
+             ref_haplo_count) = snps_reporting(haplotype_list, bamvsref,
                                               chrom, args.baq_snps,
                                               args.adjustment_threshold,
                                               args.length_threshold,
