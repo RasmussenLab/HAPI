@@ -1,7 +1,7 @@
 # Distribution and packaging files
 dist/
 build/
-src/hapi.egg-info/
+src/hapi_pyth.egg-info/
 src/hapi/__pycache__/
 src/hapi/conf/__pycache__/
 src/hapi/utils/__pycache__/

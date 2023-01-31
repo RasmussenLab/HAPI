@@ -66,8 +66,8 @@ from hapi.utils.mappings_helpers import (
     calc_snps_posteriors,
     minimum_overlap,
     average_minimum_overlap,
-    tag_filtering,
-    some_function,
+    perfect_match_filtering,
+    snps_reporting,
     remove_overlaps
 )
 
