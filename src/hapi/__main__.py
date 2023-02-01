@@ -327,16 +327,22 @@ def main():
 
     # I average the overlapping lengths 
     df_mapping_all = pd.DataFrame.from_records(mapping_all)
+
+    if not df_mapping_all.empty:
+
     # I need to average the overlapping lengths of the ref
-    df_mapping_all = averaging_df_column(df_mapping_all,
-                                         cols_to_group=["sample",
-                                                        "read_name",
-                                                        "alignment"],
-                                         avg_df_column="min_over")
+        df_mapping_all = averaging_df_column(df_mapping_all,
+                                            cols_to_group=["sample",
+                                                            "read_name",
+                                                            "alignment"],
+                                            avg_df_column="min_over")
 
-    df_mapping_all.to_csv(args.output_folder / "all_reads_mapping.tsv",
-                          sep="\t", quoting=csv.QUOTE_NONE, index=False)
+        df_mapping_all.to_csv(args.output_folder / "all_reads_mapping.tsv",
+                            sep="\t", quoting=csv.QUOTE_NONE, index=False)
 
+    else:
+        print("There dataframe df_mapping_all, which should contain all the reads mapping to both reference and collapsed genome, is empty.\nThis means that no individuals in your list of samples have reads mapping to the deletion region.\nThis could happen when one tries e.g. to run the script only on one low coverage sample.")
+        pass
     end = time()
     length = end - start
     print("Time:", length)
