@@ -8,15 +8,33 @@ Kirstine Ravn, Leonardo Cobuccio, Rasa Audange Muktupavela, Jonas Meisner, Micha
 medRxiv 2023.06.15.23290026; doi: https://doi.org/10.1101/2023.06.15.23290026
 ```
 
+The software is available on [pip](https://pypi.org/project/hapi-pyth/) and the github repo is available [here](https://github.com/RasmussenLab/HAPI/tree/main).
+
 The 144 ancient simulated DNA samples, together with the folder containing the results ran by HAPI, are available at [this link](https://doi.org/10.17894/ucph.a31d9052-546d-4f8f-8e16-e5bd896df67b).
 
 After unzipping the file, HAPI can be installed and run with the following commands:
 
 ```
+# We recommend to create a virtual environment with e.g. conda
+conda create -n hapi_env
+conda activate hapi_env
+
+# Install pip in the conda environment
+conda install pip
+
+# Locate the path where pip got installed in the conda environment
+conda env list
+
+# Install HAPI using the pip file of the conda environment to install it in the environment
+/path/to/hapi_env/bin/pip install hapi-pyth
+
+# Alternatively, HAPI can be installed locally simply with
 pip install hapi-pyth
 
+# Create folder where to store the results
 mkdir results
 
+# Command with options to execute HAPI
 hapi-pyth \
 --samples-file list_samples.txt \
 --files-extension .cram \
@@ -25,8 +43,10 @@ hapi-pyth \
 --fasta-ref-file references/hs.build37.1.fa \
 --fasta-coll-file references/ceuhaplo_collapsed.hs.build37.1.fa \
 --snps-file top_4_snps.txt \
---length-threshold 1000 \
+--length-threshold 1000
 --output-folder results
+
+# The option --length-threshold X can be used to keep only the reads shorter than the X value. Here we don't do any filter and we set to 1000. Since all reads are shorter than 1000, no read will be filtered out.
 ```
 
 HAPI will output several files in the results folder. The most important file is `results.tsv`, which is a table containing the prediction for each sample run.
