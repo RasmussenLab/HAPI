@@ -10,7 +10,7 @@ medRxiv 2023.06.15.23290026; doi: https://doi.org/10.1101/2023.06.15.23290026
 
 The software is available on [pip](https://pypi.org/project/hapi-pyth/) and the github repo is available [here](https://github.com/RasmussenLab/HAPI/tree/main).
 
-The 144 ancient simulated DNA samples, together with the folder containing the results ran by HAPI, are available at [this link](https://doi.org/10.17894/ucph.a31d9052-546d-4f8f-8e16-e5bd896df67b).
+The 144 ancient simulated DNA samples, together with the folder `results` containing the pre-computed results of runing HAPI on them, can be found [here](https://doi.org/10.17894/ucph.18c10c0d-5a85-4e17-8aba-40eb3a72d5d7) by downloading the file `aDNA_simulated_paper.zip`. The other files contain the alignments of real ancient genomes to the CCR5 region, and the user can also run HAPI on them to replicate our results.
 
 After unzipping the file, HAPI can be installed and run with the following commands:
 
