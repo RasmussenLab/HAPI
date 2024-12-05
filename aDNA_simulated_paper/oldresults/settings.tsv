@@ -1,0 +1,15 @@
+samples_file	<_io.TextIOWrapper name='list_samples.txt' mode='r' encoding='UTF-8'>
+files_extension	.cram
+folder_ref	GRCh37
+folder_coll	Collapsed
+fasta_ref_file	references/hs.build37.1.fa
+fasta_coll_file	references/ceuhaplo_collapsed.hs.build37.1.fa
+snps_file	top_4_snps.txt
+haplotype_file	None
+output_folder	results
+baq_snps	False
+baq_deletion	False
+length_threshold	1000
+overlapping_length_threshold	6
+perfect_match	False
+adjustment_threshold	50

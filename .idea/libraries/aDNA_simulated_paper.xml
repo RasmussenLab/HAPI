@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="aDNA_simulated_paper">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/aDNA_simulated_paper.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
