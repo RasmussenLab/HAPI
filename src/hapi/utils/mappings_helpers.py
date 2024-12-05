@@ -337,7 +337,7 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
                     fasta_ref: pysam.libcfaidx.FastaFile, baq: bool,
                     overlap_type: str,
                     min_base_quality: int = 30,
-                    min_mapping_quality: int = 30) -> Tuple[
+                    min_mapping_quality: int = 30, deletion_length=None) -> Tuple[
     Union[dict, defaultdict], dict, dict, List[dict]]:
     """
     Function to calculate the minimum length that a read overlaps the: -
@@ -348,11 +348,12 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
     --> To find reads HAVING the deletion, i.e. not having the reference
     32bp sequence
 
+    :param deletion_length:
     :param bam_file: bam file
     :param chrom: chromosome number
     :param position_list: list containing the 4 different Starting and Ending coordinates of the deletion in the Reference or the unique Starting and Ending coordinates in the Collapsed Reference
     :param adjust_threshold: adjust mapping quality.
-    :param mapping_all: a list of dicts with stored reseults
+    :param mapping_all: a list of dicts with stored results
     :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
     :param number of nucleotides with which each read needs to overlap the deletion or reference coordinates in order to be kept
     :sample: a SNP
@@ -394,7 +395,7 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
                     reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(
                         pileupcolumn, reads_dict, lengths_dict, mapping_all,
                         nm_tags_dict, length_threshold, ol_threshold, sample,
-                        overlap_type, position_list=start_end, pos=pos)
+                        overlap_type, position_list=start_end, pos=pos,deletion_length=deletion_length)
 
     # If the list contains 1 element, i.e. P --> Bam aligned vs Collapsed Reference, 
     # to detect reads HAVING the deletion
@@ -413,7 +414,7 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
             reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(
                 pileupcolumn, reads_dict, lengths_dict, mapping_all,
                 nm_tags_dict, length_threshold, ol_threshold, sample,
-                overlap_type, position_list=position_list, pos=None)
+                overlap_type, position_list=position_list, pos=None, deletion_length=deletion_length)
     else:
         raise ValueError('selected overlap_type is not del or ref')
 
@@ -425,12 +426,13 @@ def min_over_reference_or_32del(
         reads_dict: Union[dict, defaultdict], lengths_dict: dict,
         mapping_all: List[dict], nm_tags_dict: dict, length_threshold: int,
         ol_threshold: int, sample: str, overlap_type: str,
-        position_list: list, pos: Union[int, Any]) -> Tuple[
+        position_list: list, pos: Union[int, Any], deletion_length: int) -> Tuple[
     Union[dict, defaultdict], dict, List[dict], dict]:
     """
     Function to extract each read from the pileupcolumn and calculate the the minimum overlapping length with which it maps to the Reference or to the
     Collapsed Reference, number of mismatches, read length, read sequence etc to save everything in a file
-    :param pileupcolumn: pysam PileupColumn object which represents all the reads in the SAM file that map to a single base from the reference sequence. 
+    :param deletion_length: The length of the deletion, 32 for CCR5
+    :param pileupcolumn: pysam PileupColumn object which represents all the reads in the SAM file that map to a single base from the reference sequence.
     :param reads_dict: the dictionary containing reads with their minimum overlaps
     :param lengths_dict: dictionary containing each read with its minimum length with which it overlaps the deletion or reference coordinates
     :param mapping_all: a list of dicts with stored reseults
@@ -478,8 +480,8 @@ def min_over_reference_or_32del(
                 if overlap_type == 'ref':
                     S, E = position_list
                     if reference_start <= S and reference_end >= E:
-                        # Minimum overlapping length is 32
-                        min_over = 32
+                        # Minimum overlapping length is 32 for CCR5
+                        min_over = deletion_length
                     else:
                         # I calculate the left and right overlap of the read
                         left = query_position
@@ -526,7 +528,7 @@ def min_over_reference_or_32del(
     return reads_dict, lengths_dict, mapping_all, nm_tags_dict
 
 
-def average_minimum_overlap(reads_dict: Union[dict, defaultdict]) -> dict:
+def average_minimum_overlap(reads_dict: Union[dict, defaultdict], deletion_length: int) -> dict:
     """
     Function to take the average of the minimum overlapping lengths over the
     4 different coordinates couples of the deletion.
@@ -541,7 +543,7 @@ def average_minimum_overlap(reads_dict: Union[dict, defaultdict]) -> dict:
     # coordinate couple, set min_over to 32 Else, min_over will be calculate
     # as the average of the minimum overlaps for each coordinate couple
     return dict(
-        (k, 32) if 32 in v else (k, mean(v)) for k, v in reads_dict.items())
+        (k, deletion_length) if deletion_length in v else (k, mean(v)) for k, v in reads_dict.items())
 
 
 def perfect_match_filtering(bamfile: pysam.libcalignmentfile.AlignmentFile,

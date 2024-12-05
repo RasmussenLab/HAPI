@@ -1,9 +1,9 @@
-""" The script is divided in two parts:
+"""The script is divided in two parts:
 A) CEU rs333 haplotype probability calculation
 
 For each SNP of the snp_file, I extract the pileup of their position and
 calculate the probability of each possible genotype (Ref/Ref, Ref/Alt, Alt/Alt)
-given the data, i.e. p(G|D), where:
+given the data, i.e. p(G|D), where: #
 - G stands for Genotype of the alleles
 - D stands for Data.
 
@@ -40,7 +40,7 @@ from itertools import chain
 from time import time
 import warnings
 
-warnings.filterwarnings(action='ignore', category=UserWarning)
+warnings.filterwarnings(action="ignore", category=UserWarning)
 
 import pandas as pd
 
@@ -52,7 +52,7 @@ from hapi.utils.data_utils import (
     dict_to_list,
     write_probdf,
     write_results,
-    write_settings
+    write_settings,
 )
 from hapi.utils.probabilities_helpers import (
     prob_to_weighted,
@@ -60,7 +60,7 @@ from hapi.utils.probabilities_helpers import (
     pD_RR_b_,
     p_D_G_2,
     pD_2_,
-    pG_D_2
+    pG_D_2,
 )
 from hapi.utils.mappings_helpers import (
     calc_snps_posteriors,
@@ -68,35 +68,47 @@ from hapi.utils.mappings_helpers import (
     average_minimum_overlap,
     perfect_match_filtering,
     snps_reporting,
-    remove_overlaps
+    remove_overlaps,
 )
+
+from utils.yamlreader import YamlReader
 
 
 ############## Execution #################
-
 def main():
     ### Specifically for project used variable values ###
     # Lists containing the positions to check for overlapping reads
     # N.B. the CCR5delta32 deletion (rs333) has 4 different coordinate representations
     # (see https://varsome.com/variant/hg19/rs333?annotation-mode=germline)
-    position_list_reference = [[46414944, 46414975], [46414945, 46414976],
-                               [46414946, 46414977], [46414947, 46414978]]
-    position_list_deletion = [46414943]
+    import os
 
-    top4_snps_list = ["rs113341849", "rs113010081", "rs11574435", "rs79815064"]
-    chrom = str(3)
-    fetch_start = 46414943
-    fetch_end = 46414980
-
-    ### Starting the script ###
-
-    # Start time initiation
-    start = time()
+    print(os.getcwd())
 
     # Get script arguments
     parser = create_parser()
     args = parser.parse_args()
     write_settings(args)
+
+    yaml_reader = YamlReader(args.config)
+    position_list_reference = yaml_reader.position_list_reference
+    position_list_deletion = yaml_reader.position_list_deletion
+    top4_snps_list = yaml_reader.top4_snps_list
+    chrom = yaml_reader.chromosome  # str(3)
+    deletion_length = yaml_reader.deletion_length
+
+    if len(position_list_reference) == 1:
+        overlapping_length_threshold = 2
+    else:
+        overlapping_length_threshold = len(position_list_reference) + 2
+
+    # TODO change this part -- not relevant as long as perfect math is off
+    # fetch_start = 46414943
+    # fetch_end = 46414980
+
+    ### Starting the script ###
+
+    # Start time initiation
+    start = time()
 
     # Output folder
     results_filepath = args.output_folder / "results.tsv"
@@ -111,25 +123,27 @@ def main():
         haplotype_list = snp_haplo_list(args.haplotype)
     # Open the samples list
     samples_list = args.samples_file.read().splitlines()
-
     # For each sample to analyse
     for sample in samples_list:
         print(sample)
 
         # I parse the arguments given when executing the script
-        bamvsref, bamvsdel, fasta_ref, fasta_coll = open_files_args(args,
-                                                                    sample)
+        bamvsref, bamvsdel, fasta_ref, fasta_coll = open_files_args(args, sample)
 
         # Part 0: If --haplotype option is activated --> write a table to file
         # containing the reporting of all the 86 SNPs
         if args.haplotype_file:
             # I report all the SNPs called of the haplotype
-            (haplo_results,
-             ref_haplo_count) = snps_reporting(haplotype_list, bamvsref,
-                                              chrom, args.baq_snps,
-                                              args.adjustment_threshold,
-                                              args.length_threshold,
-                                              sample, fasta_ref)
+            (haplo_results, ref_haplo_count) = snps_reporting(
+                haplotype_list,
+                bamvsref,
+                chrom,
+                args.baq_snps,
+                args.adjustment_threshold,
+                args.length_threshold,
+                sample,
+                fasta_ref,
+            )
 
         ### Part A: Prior Probability calculated as joint probability of top 4
         # SNPs' posterior probabilities - Execution
@@ -142,12 +156,18 @@ def main():
 
         # 2 - Calculate Posterior probability of each SNP given each
         # possible Genotype
-        (prob_df, coverage_ref, coverage_alt, coverage_other,
-         dict_snps_cov) = calc_snps_posteriors(snp_list, bamvsref, chrom,
-                                               fasta_ref, args.baq_snps,
-                                               args.adjustment_threshold,
-                                               args.length_threshold,
-                                               top4_snps_list)
+        (prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov) = (
+            calc_snps_posteriors(
+                snp_list,
+                bamvsref,
+                chrom,
+                fasta_ref,
+                args.baq_snps,
+                args.adjustment_threshold,
+                args.length_threshold,
+                top4_snps_list,
+            )
+        )
 
         # 3 - Weighted probs calculation: multiply each SNP's probability by
         # the relative Rsquared and store in new columns. 3 - Plus,
@@ -158,8 +178,7 @@ def main():
         write_probdf(prob_df, outdir, sample)
 
         # 4 - Joint probs calculation + normalization.
-        pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm = calc_prob_joint(
-            prob_df)
+        pRR_D_joint_norm, pRA_D_joint_norm, pAA_D_joint_norm = calc_prob_joint(prob_df)
 
         ### IF I WANT TO PRINT THE DATAFRAME
         # Uncomment to show the entire dataframe
@@ -172,58 +191,87 @@ def main():
         # 1 - Calculation of the minimum overlapping lengths of the reads In
         # the dataframe df_mapping_all I put all the reads mapping, so both
         # those that map vs reference and those that map vs collapsed
-        (reads_dict_ref, lengths_dict_ref, mapping_all,
-         nm_tags_dict_ref) = minimum_overlap(bamvsref, "3",
-                                             position_list_reference,
-                                             args.adjustment_threshold,
-                                             mapping_all,
-                                             args.length_threshold,
-                                             args.overlapping_length_threshold,
-                                             sample,
-                                             fasta_coll,
-                                             fasta_ref,
-                                             baq=args.baq_deletion,
-                                             overlap_type="ref")
+        (reads_dict_ref, lengths_dict_ref, mapping_all, nm_tags_dict_ref) = (
+            minimum_overlap(
+                bamvsref,
+                chrom,
+                position_list_reference,
+                args.adjustment_threshold,
+                mapping_all,
+                args.length_threshold,
+                overlapping_length_threshold,
+                sample,
+                fasta_coll,
+                fasta_ref,
+                baq=args.baq_deletion,
+                overlap_type="ref",
+                deletion_length=deletion_length,
+            )
+        )
 
-        (reads_dict_del, lengths_dict_del, mapping_all,
-         nm_tags_dict_del) = minimum_overlap(bamvsdel, "3",
-                                             position_list_deletion,
-                                             args.adjustment_threshold,
-                                             mapping_all,
-                                             args.length_threshold,
-                                             args.overlapping_length_threshold,
-                                             sample,
-                                             fasta_coll,
-                                             fasta_ref,
-                                             baq=args.baq_deletion,
-                                             overlap_type="del")
+        (reads_dict_del, lengths_dict_del, mapping_all, nm_tags_dict_del) = (
+            minimum_overlap(
+                bamvsdel,
+                chrom,
+                position_list_deletion,
+                args.adjustment_threshold,
+                mapping_all,
+                args.length_threshold,
+                overlapping_length_threshold,
+                sample,
+                fasta_coll,
+                fasta_ref,
+                baq=args.baq_deletion,
+                overlap_type="del",
+                deletion_length=deletion_length,
+            )
+        )
 
         # 2 - Average of the overlapping lengths of all the 4 coordinates
         # couples in the bam vs GRCh37
-        reads_dict_ref = average_minimum_overlap(reads_dict_ref)
+        reads_dict_ref = average_minimum_overlap(reads_dict_ref, deletion_length)
 
         # In case there are reads that overlap both the reference and the
         # collapsed genome, I'll keep only the one that has the lowest
         # number of mismatches and the highest overlapping length
-        (reads_dict_del, reads_dict_ref, nm_tags_dict_del,
-         nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del,
-         n_reads_mapping_both) = remove_overlaps(reads_dict_del, 
-                                                 reads_dict_ref, 
-                                                 nm_tags_dict_del,
-                                                 nm_tags_dict_ref, 
-                                                 lengths_dict_ref, 
-                                                 lengths_dict_del)
+        (
+            reads_dict_del,
+            reads_dict_ref,
+            nm_tags_dict_del,
+            nm_tags_dict_ref,
+            lengths_dict_ref,
+            lengths_dict_del,
+            n_reads_mapping_both,
+        ) = remove_overlaps(
+            reads_dict_del,
+            reads_dict_ref,
+            nm_tags_dict_del,
+            nm_tags_dict_ref,
+            lengths_dict_ref,
+            lengths_dict_del,
+        )
 
         # 3 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 
         if args.perfect_match:
-            reads_dict_ref = perfect_match_filtering(bamvsref, reads_dict_ref,
-                                           lengths_dict_ref, chrom,
-                                           fetch_start, fetch_end)
+            raise NotImplementedError("Not implemented for other deletions than ccr5")
+            reads_dict_ref = perfect_match_filtering(
+                bamvsref,
+                reads_dict_ref,
+                lengths_dict_ref,
+                chrom,
+                fetch_start,
+                fetch_end,
+            )
 
-            reads_dict_del = perfect_match_filtering(bamvsdel, reads_dict_del,
-                                           lengths_dict_del, chrom,
-                                           fetch_start, fetch_end)
+            reads_dict_del = perfect_match_filtering(
+                bamvsdel,
+                reads_dict_del,
+                lengths_dict_del,
+                chrom,
+                fetch_start,
+                fetch_end,
+            )
 
         # 4 - Convert the dicts to lists, so it's easier to write in the
         # output file
@@ -238,12 +286,19 @@ def main():
         pD_RR_d, pD_RD_d, pD_DD_d = p_D_G_2(reads_dict_del, "del")
 
         # 6 - I calculate the JOINT p(D|G) from the 2 bams
-        pD_RR_b, pD_RD_b, pD_DD_b = pD_RR_b_(pD_RR_g, pD_RR_d, pD_RD_g,
-                                             pD_RD_d, pD_DD_g, pD_DD_d)
+        pD_RR_b, pD_RD_b, pD_DD_b = pD_RR_b_(
+            pD_RR_g, pD_RR_d, pD_RD_g, pD_RD_d, pD_DD_g, pD_DD_d
+        )
 
         # 7 - p(D) calculation
-        pD_2_norm, pD_2_r = pD_2_(pRR_D_joint_norm, pRA_D_joint_norm,
-                                  pAA_D_joint_norm, pD_RR_b, pD_RD_b, pD_DD_b)
+        pD_2_norm, pD_2_r = pD_2_(
+            pRR_D_joint_norm,
+            pRA_D_joint_norm,
+            pAA_D_joint_norm,
+            pD_RR_b,
+            pD_RD_b,
+            pD_DD_b,
+        )
 
         # 8 - Posterior Probabilities p(G|D) for each "sequence genotype"
         # using the normalized likelihoods
@@ -283,7 +338,7 @@ def main():
             "pRR_Data_r": pRR_D_2_r,
             "pRD_Data_r": pRD_D_2_r,
             "pDD_Data_r": pDD_D_2_r,
-            "N_reads_mapping_both": n_reads_mapping_both
+            "N_reads_mapping_both": n_reads_mapping_both,
         }
         for i, top_snp in enumerate(top4_snps_list):
             record[f"SNP_{i + 1}_{top_snp}"] = dict_snps_cov[top_snp]
@@ -291,57 +346,58 @@ def main():
 
         records_ref, records_del = [], []
         ref_del_references = zip(
-            [reads_dict_ref, reads_dict_del],
-            ["ref", "del"],
-            [records_ref, records_del]
+            [reads_dict_ref, reads_dict_del], ["ref", "del"], [records_ref, records_del]
         )
 
         for reads_dict, _class, records_class in ref_del_references:
             for read in reads_dict.keys():
-                result_class = {
-                    "sample": sample,
-                    "read_name": read,
-                    "class": _class
-                }
+                result_class = {"sample": sample, "read_name": read, "class": _class}
                 records_class.append(result_class)
 
         # 11 - Append the results to the output file
         header = write_results(results_filepath, records, header)
 
         header_ref = write_results(
-            args.output_folder / "reads_assigned_ref.tsv",
-            records_ref, header_ref)
+            args.output_folder / "reads_assigned_ref.tsv", records_ref, header_ref
+        )
 
         header_del = write_results(
-            args.output_folder / "reads_assigned_del.tsv",
-            records_del, header_del)
+            args.output_folder / "reads_assigned_del.tsv", records_del, header_del
+        )
 
         if args.haplotype_file:
             header_hapl = write_results(
-                args.output_folder / "SNPS_reporting.tsv",
-                haplo_results, header_hapl)
+                args.output_folder / "SNPS_reporting.tsv", haplo_results, header_hapl
+            )
 
             header_hapl_c = write_results(
                 args.output_folder / "ref_haplo_counts.tsv",
-                ref_haplo_count, header_hapl_c)
+                ref_haplo_count,
+                header_hapl_c,
+            )
 
-    # I average the overlapping lengths 
+    # I average the overlapping lengths
     df_mapping_all = pd.DataFrame.from_records(mapping_all)
 
     if not df_mapping_all.empty:
+        # I need to average the overlapping lengths of the ref
+        df_mapping_all = averaging_df_column(
+            df_mapping_all,
+            cols_to_group=["sample", "read_name", "alignment"],
+            avg_df_column="min_over",
+        )
 
-    # I need to average the overlapping lengths of the ref
-        df_mapping_all = averaging_df_column(df_mapping_all,
-                                            cols_to_group=["sample",
-                                                            "read_name",
-                                                            "alignment"],
-                                            avg_df_column="min_over")
-
-        df_mapping_all.to_csv(args.output_folder / "all_reads_mapping.tsv",
-                            sep="\t", quoting=csv.QUOTE_NONE, index=False)
+        df_mapping_all.to_csv(
+            args.output_folder / "all_reads_mapping.tsv",
+            sep="\t",
+            quoting=csv.QUOTE_NONE,
+            index=False,
+        )
 
     else:
-        print("There dataframe df_mapping_all, which should contain all the reads mapping to both reference and collapsed genome, is empty.\nThis means that no individuals in your list of samples have reads mapping to the deletion region.\nThis could happen when one tries e.g. to run the script only on one low coverage sample.")
+        print(
+            "There dataframe df_mapping_all, which should contain all the reads mapping to both reference and collapsed genome, is empty.\nThis means that no individuals in your list of samples have reads mapping to the deletion region.\nThis could happen when one tries e.g. to run the script only on one low coverage sample."
+        )
         pass
     end = time()
     length = end - start
@@ -350,3 +406,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # # test that it outputs the samde
+    # import subprocess as sb
+    #
+    # out = sb.run(["diff results/results.tsv resultstrue"], shell=True, stdout=sb.PIPE)
+    # print(str(out.stdout))
+    # assert (out.stdout == b'')

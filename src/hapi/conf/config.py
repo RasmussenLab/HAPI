@@ -48,5 +48,7 @@ def create_parser():
                         help="option to keep only reads with perfect match to the  genome. Not used in the final script") 
     parser.add_argument("--adjustment-threshold", type=int, required=False, default = 50,
                         help="option adjust_capq_threshold of pysam to adjust mapping quality. Recommended value is 50 and is the default")
+    parser.add_argument("--config", type=str, required=True, default = None,
+                        help="Config file")
 
     return parser

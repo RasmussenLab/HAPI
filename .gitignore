@@ -12,3 +12,5 @@ hapi.sh
 
 # venv
 venv/
+.idea
+aDNA_simulated_paper
