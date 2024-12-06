@@ -5,11 +5,13 @@ from typing import List, Tuple
 import pandas as pd
 import pysam
 
-
 OpenFilesArgsOutput = Tuple[pysam.libcalignmentfile.AlignmentFile,
-                            pysam.libcalignmentfile.AlignmentFile,
-                            pysam.libcfaidx.FastaFile,
-                            pysam.libcfaidx.FastaFile]
+pysam.libcalignmentfile.AlignmentFile,
+pysam.libcfaidx.FastaFile,
+pysam.libcfaidx.FastaFile]
+
+
+
 
 ############## FILES OPENING FUNCTION DECLARATION ##############
 
@@ -24,7 +26,7 @@ def open_files_args(args: argparse.Namespace,
     :return: bamsvdel, BAM file of the GRCh37 with deletion 
     :return: fasta_ref, Fasta File of GRCh37
     :return: fasta_coll, Fasta File of GRCh37 with deletion
-    """    
+    """
     bamvsref_path = Path.joinpath(args.folder_ref,
                                   sample + args.files_extension)
 
@@ -81,7 +83,7 @@ def write_probdf(prob_df: pd.DataFrame, outdir: Path, sample: str) -> None:
     :param prob_df: probability Dataframe
     :param outdir: Pathway to the folder where to save results
     :param sample: the SNP of which prob_df is saved
-    """    
+    """
 
     prob_df.to_csv(Path.joinpath(outdir, sample + "top4SNPs_prob_df.tsv"),
                    sep="\t")
@@ -93,7 +95,7 @@ def write_settings(args: argparse.Namespace) -> None:
     Write CLI arguments used in the script to the .tsv file 
 
     :param args: CLI arguments
-    """    
+    """
     settings_dict = {arg: str(getattr(args, arg)) for arg in vars(args)}
 
     with open(args.output_folder / "settings.tsv", "w") as settings_file:
@@ -110,7 +112,7 @@ def write_results(results_filepath: Path, records: dict, header: bool) -> bool:
     :param records: dictionary with records to save
     :param header: bool if use header when saving results
     :return: bool if use header when saving results next time
-    """    
+    """
     if records:
 
         records_df = pd.DataFrame.from_records(records)
