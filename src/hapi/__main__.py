@@ -72,34 +72,7 @@ from hapi.utils.mappings_helpers import (
 )
 from typing import List
 
-from hapi.utils.yamlreader.py import YamlReader
-
-# class YamlReader:
-#     def __init__(self, file_path: str) -> None:
-#         import yaml
-#
-#         with open(file_path, "r") as f:
-#             self.yaml_loader = yaml.safe_load(f)
-#
-#     @property
-#     def position_list_reference(self) -> List[List[int]]:
-#         return self.yaml_loader["position_list_reference"]
-#
-#     @property
-#     def position_list_deletion(self) -> list:
-#         return [self.yaml_loader["position_list_deletion"]]
-#
-#     @property
-#     def top4_snps_list(self) -> list:
-#         return self.yaml_loader["top4_snps_list"]
-#
-#     @property
-#     def chromosome(self) -> str:
-#         return str(self.yaml_loader["chromosome"])
-#
-#     @property
-#     def deletion_length(self) -> int:
-#         return int(self.yaml_loader["deletion_length"])
+from hapi.utils.reader_of_yaml import YamlReader
 
 
 ############## Execution #################
@@ -108,9 +81,6 @@ def main():
     # Lists containing the positions to check for overlapping reads
     # N.B. the CCR5delta32 deletion (rs333) has 4 different coordinate representations
     # (see https://varsome.com/variant/hg19/rs333?annotation-mode=germline)
-    import os
-
-    print(os.getcwd())
 
     # Get script arguments
     parser = create_parser()
@@ -124,16 +94,7 @@ def main():
     chrom = yaml_reader.chromosome  # str(3)
     deletion_length = yaml_reader.deletion_length
 
-    # if len(position_list_reference) == 1:
-    #     overlapping_length_threshold = 2
-    # else:
-    #     overlapping_length_threshold = len(position_list_reference) + 2
     overlapping_length_threshold = 6
-    print(overlapping_length_threshold)
-
-    # TODO change this part -- not relevant as long as perfect math is off
-    # fetch_start = 46414943
-    # fetch_end = 46414980
 
     ### Starting the script ###
 
@@ -151,7 +112,7 @@ def main():
     header, header_del, header_ref = True, True, True
     if args.haplotype_file:
         header_hapl, header_hapl_c = True, True
-        haplotype_list = snp_haplo_list(args.haplotype_file)  # TODO is changed
+        haplotype_list = snp_haplo_list(args.haplotype_file)
     # Open the samples list
     samples_list = args.samples_file.read().splitlines()
     # For each sample to analyse
@@ -282,29 +243,7 @@ def main():
             lengths_dict_del,
         )
 
-        # 3 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
-
-        # if args.perfect_match:
-        #     raise NotImplementedError("Not implemented for other deletions than ccr5")
-        #     reads_dict_ref = perfect_match_filtering(
-        #         bamvsref,
-        #         reads_dict_ref,
-        #         lengths_dict_ref,
-        #         chrom,
-        #         fetch_start,
-        #         fetch_end,
-        #     )
-        #
-        #     reads_dict_del = perfect_match_filtering(
-        #         bamvsdel,
-        #         reads_dict_del,
-        #         lengths_dict_del,
-        #         chrom,
-        #         fetch_start,
-        #         fetch_end,
-        #     )
-
-        # 4 - Convert the dicts to lists, so it's easier to write in the
+        # 3 - Convert the dicts to lists, so it's easier to write in the
         # output file
         reads_list_ref = dict_to_list(reads_dict_ref)
         reads_list_del = dict_to_list(reads_dict_del)
@@ -312,16 +251,16 @@ def main():
         lengths_list_ref = dict_to_list(lengths_dict_ref)
         lengths_list_del = dict_to_list(lengths_dict_del)
 
-        # 5 - I calculate p(D|G) for both the bam vs GRCh37 and vs 32del
+        # 4 - I calculate p(D|G) for both the bam vs GRCh37 and vs 32del
         pD_RR_g, pD_RD_g, pD_DD_g = p_D_G_2(reads_dict_ref, "ref")
         pD_RR_d, pD_RD_d, pD_DD_d = p_D_G_2(reads_dict_del, "del")
 
-        # 6 - I calculate the JOINT p(D|G) from the 2 bams
+        # 5 - I calculate the JOINT p(D|G) from the 2 bams
         pD_RR_b, pD_RD_b, pD_DD_b = pD_RR_b_(
             pD_RR_g, pD_RR_d, pD_RD_g, pD_RD_d, pD_DD_g, pD_DD_d
         )
 
-        # 7 - p(D) calculation
+        # 6 - p(D) calculation
         pD_2_norm, pD_2_r = pD_2_(
             pRR_D_joint_norm,
             pRA_D_joint_norm,
@@ -331,20 +270,20 @@ def main():
             pD_DD_b,
         )
 
-        # 8 - Posterior Probabilities p(G|D) for each "sequence genotype"
+        # 7 - Posterior Probabilities p(G|D) for each "sequence genotype"
         # using the normalized likelihoods
 
         pRR_D_2_norm = pG_D_2(pRR_D_joint_norm, pD_RR_b, pD_2_norm)
         pRD_D_2_norm = pG_D_2(pRA_D_joint_norm, pD_RD_b, pD_2_norm)
         pDD_D_2_norm = pG_D_2(pAA_D_joint_norm, pD_DD_b, pD_2_norm)
 
-        # 9 - Posterior Probabilities p(G|D) for each "sequence genotype"
+        # 8 - Posterior Probabilities p(G|D) for each "sequence genotype"
         # considering the RANDOM haplotype
         pRR_D_2_r = pG_D_2(0.33, pD_RR_b, pD_2_r)
         pRD_D_2_r = pG_D_2(0.33, pD_RD_b, pD_2_r)
         pDD_D_2_r = pG_D_2(0.33, pD_DD_b, pD_2_r)
 
-        # 10 - Make records
+        # 9 - Make records
 
         record = {
             "Sample": sample,
@@ -385,7 +324,7 @@ def main():
                 result_class = {"sample": sample, "read_name": read, "class": _class}
                 records_class.append(result_class)
 
-        # 11 - Append the results to the output file
+        # 10 - Append the results to the output file
         header = write_results(results_filepath, records, header)
 
         header_ref = write_results(
