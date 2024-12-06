@@ -15,24 +15,8 @@ The 144 ancient simulated DNA samples, together with the folder `results` contai
 After unzipping the file, HAPI can be installed and run with the following commands:
 
 ```
-# We recommend to create a virtual environment with e.g. conda
-conda create -n hapi_env
-conda activate hapi_env
-
-# Install pip in the conda environment
-conda install pip
-
-# Locate the path where pip got installed in the conda environment
-conda env list
-
-# Install HAPI using the pip file of the conda environment to install it in the environment
-/path/to/hapi_env/bin/pip install hapi-pyth
-
-# Alternatively, HAPI can be installed locally simply with
+# Hapi can be installed through pip
 pip install hapi-pyth
-
-# Create folder where to store the results
-mkdir results
 
 # Command with options to execute HAPI
 hapi-pyth \
@@ -45,6 +29,7 @@ hapi-pyth \
 --snps-file top_4_snps.txt \
 --length-threshold 1000
 --output-folder results
+--config config/rs369842709.config
 
 # The option --length-threshold X can be used to keep only the reads shorter than the X value. Here we don't do any filter and we set to 1000. Since all reads are shorter than 1000, no read will be filtered out.
 ```
@@ -87,11 +72,5 @@ The file `all_reads_mapping.tsv` contain all the reads mapping to either the can
 The file `reads_assigned_ref.tsv` and `reads_assigned_del.tsv` contain the list of reads assigned to the canonical and collapsed reference, respectively, according to the minimum overlapping length option. This means that these two files will contain less reads than the previous one, i.e. only those that were assigned to the references, not merely all the reads mapping.
 
 The folder `prob_dfs` contains, for each sample, the calls of each of the top 4 variants, together with how many calls, and the values of the probabilities for each variant
-
-Please note that in its current state, HAPI can identify only the CCR5delta32 deletion. This is for two reasons:
-1. The CCR5delta32 deletion has 4 equivalent representations, each with its own coordinates ([click here for details](https://varsome.com/variant/hg19/rs333?annotation-mode=germline)). HAPI was developed with these 4 different sets of coordinates in mind. Another deletion of interest might have only one representation or a set of different ones
-2. HAPI uses the information from the top 4 tag variants in high LD with the CCR5delta32 as Prior. Another deletion of interest might not have known tag variants
-  
-Therefore, one could potentially extend HAPI to identify other deletions if they have information about tag variants in high LD with them, and adapting the code regarding the deletion coordinates.
 
 For more details about HAPI, please refer to the pre-print references above.
