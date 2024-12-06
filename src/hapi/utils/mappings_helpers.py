@@ -6,24 +6,26 @@ from typing import Union, Any, Tuple, List
 import pandas as pd
 import pysam
 
-from hapi.utils.probabilities_helpers import (
-    pD_G_,
-    pD_,
-    pG_D_
-)
+from hapi.utils.probabilities_helpers import pD_G_, pD_, pG_D_
 
 
 ############## Part A FUNCTIONS DECLARATION ##############
 
-def get_pilecolumns(bam_file: pysam.libcalignmentfile.AlignmentFile, baq: bool,
-                    chrom: str, min_base_quality: int,
-                    adjustment_threshold: int, min_mapping_quality: int,
-                    fastafile: pysam.libcfaidx.FastaFile,
-                    start: int,
-                    end: int) -> pysam.libcalignmentfile.IteratorColumnRegion:
+
+def get_pilecolumns(
+    bam_file: pysam.libcalignmentfile.AlignmentFile,
+    baq: bool,
+    chrom: str,
+    min_base_quality: int,
+    adjustment_threshold: int,
+    min_mapping_quality: int,
+    fastafile: pysam.libcfaidx.FastaFile,
+    start: int,
+    end: int,
+) -> pysam.libcalignmentfile.IteratorColumnRegion:
     """
     Makes an object with the extracted reads mapping to the genomic coordinate
-    :param bam_file: bam file 
+    :param bam_file: bam file
     :param baq: whether to perform BAQ (base alignment quality) calculation
     :param chrom: chromosome number of the position to extract
     :param min_base_quality: base quality
@@ -36,39 +38,56 @@ def get_pilecolumns(bam_file: pysam.libcalignmentfile.AlignmentFile, baq: bool,
     :return: Iterator object pysam pileup object: an iterable which represents all the reads in the SAM file that map to a single base in the reference sequence.
     The list of reads are represented as PileupRead objects in the PileupColumn.pileups property
     """
-    # Each iteration returns a PileupColumn which represents all the reads in the SAM file that map to a single base in 
-    # the reference sequence. 
+    # Each iteration returns a PileupColumn which represents all the reads in the SAM file that map to a single base in
+    # the reference sequence.
     if baq == False:
-        pileupcolumns = bam_file.pileup(chrom, start, end, truncate=True,
-                                        min_base_quality=min_base_quality,
-                                        adjust_capq_threshold=adjustment_threshold,
-                                        min_mapping_quality=min_mapping_quality)
+        pileupcolumns = bam_file.pileup(
+            chrom,
+            start,
+            end,
+            truncate=True,
+            min_base_quality=min_base_quality,
+            adjust_capq_threshold=adjustment_threshold,
+            min_mapping_quality=min_mapping_quality,
+        )
     elif baq == True:
-        pileupcolumns = bam_file.pileup(chrom, start, end, truncate=True,
-                                        stepper="samtools",
-                                        fastafile=fastafile, compute_baq=True,
-                                        min_base_quality=min_base_quality,
-                                        adjust_capq_threshold=adjustment_threshold,
-                                        min_mapping_quality=min_mapping_quality)
+        pileupcolumns = bam_file.pileup(
+            chrom,
+            start,
+            end,
+            truncate=True,
+            stepper="samtools",
+            fastafile=fastafile,
+            compute_baq=True,
+            min_base_quality=min_base_quality,
+            adjust_capq_threshold=adjustment_threshold,
+            min_mapping_quality=min_mapping_quality,
+        )
     else:
-        raise ValueError('baq parameter selected neither True nor False')
+        raise ValueError("baq parameter selected neither True nor False")
 
     return pileupcolumns
 
 
-def extr_rbases_bam(bamvsref_file: pysam.libcalignmentfile.AlignmentFile,
-                    chrom: str, coordinate: int, ref: str, alt: str, baq: bool,
-                    fasta_ref: pysam.libcfaidx.FastaFile,
-                    adjustment_threshold: int, length_threshold: int,
-                    min_base_quality: int = 0,
-                    min_mapping_quality: int = 0) -> Tuple[
-    list, list, list, list]:
-    """ 
+def extr_rbases_bam(
+    bamvsref_file: pysam.libcalignmentfile.AlignmentFile,
+    chrom: str,
+    coordinate: int,
+    ref: str,
+    alt: str,
+    baq: bool,
+    fasta_ref: pysam.libcfaidx.FastaFile,
+    adjustment_threshold: int,
+    length_threshold: int,
+    min_base_quality: int = 0,
+    min_mapping_quality: int = 0,
+) -> Tuple[list, list, list, list]:
+    """
     Extract the read bases, i.e. the bases of the reads that map to a specific
     position in the bam file. bq and mq are base quality and mapping quality.
     Change them if I want to filter.
 
-    :param bamvsref_file: bam file 
+    :param bamvsref_file: bam file
     :param chrom: chromosome number of the position to extract
     :param coordinate: coordinate of the position to extract
     :param ref: reference allele at the position
@@ -80,11 +99,11 @@ def extr_rbases_bam(bamvsref_file: pysam.libcalignmentfile.AlignmentFile,
     :param min_base_quality: mapping quality
     :param min_mapping_quality: base alignment quality filtering
     :return: reads_list, read bases that at the position correspond to
-        either the Reference or Alternate allele 
+        either the Reference or Alternate allele
     :return: other_list, read bases that at the position do not correspond to
-        neither the Reference nor Alternate allele 
+        neither the Reference nor Alternate allele
     :return: ref_list, read bases that at the position do not correspond to
-        the Reference allele 
+        the Reference allele
     :return: alt_list: read bases that at the position do not correspond to
         Alternate allele
     """
@@ -95,22 +114,42 @@ def extr_rbases_bam(bamvsref_file: pysam.libcalignmentfile.AlignmentFile,
 
     reads_list, other_list, ref_list, alt_list = [], [], [], []
 
-    pileupcolumns = get_pilecolumns(bamvsref_file, baq, chrom,
-                                    min_base_quality, adjustment_threshold,
-                                    min_mapping_quality, fastafile=fasta_ref,
-                                    start=coordinate - 1, end=coordinate)
+    pileupcolumns = get_pilecolumns(
+        bamvsref_file,
+        baq,
+        chrom,
+        min_base_quality,
+        adjustment_threshold,
+        min_mapping_quality,
+        fastafile=fasta_ref,
+        start=coordinate - 1,
+        end=coordinate,
+    )
 
     for pileupcolumn in pileupcolumns:
         reads_list, other_list, ref_list, alt_list = extract_lists(
-            pileupcolumn, ref, alt, length_threshold, reads_list, other_list,
-            ref_list, alt_list)
+            pileupcolumn,
+            ref,
+            alt,
+            length_threshold,
+            reads_list,
+            other_list,
+            ref_list,
+            alt_list,
+        )
     return reads_list, other_list, ref_list, alt_list
 
 
-def extract_lists(pileupcolumn: pysam.libcalignedsegment.PileupColumn,
-                  ref: str, alt: str, length_threshold: int, reads_list: list,
-                  other_list: list, ref_list: list, alt_list: list) -> Tuple[
-    list, list, list, list]:
+def extract_lists(
+    pileupcolumn: pysam.libcalignedsegment.PileupColumn,
+    ref: str,
+    alt: str,
+    length_threshold: int,
+    reads_list: list,
+    other_list: list,
+    ref_list: list,
+    alt_list: list,
+) -> Tuple[list, list, list, list]:
     """
     Function to extract the reads mapping to a certain position from the
     PileupColumn object. If the read base at the position corresponds to
@@ -118,24 +157,24 @@ def extract_lists(pileupcolumn: pysam.libcalignedsegment.PileupColumn,
     file, the read will be put in the object "reads_list". If not, the read
     will be put in the "other_list"
 
-    :param pileupcolumn: pysam PileupColumn object which represents all the reads in the SAM file that map to a single base from the reference sequence. 
+    :param pileupcolumn: pysam PileupColumn object which represents all the reads in the SAM file that map to a single base from the reference sequence.
     :param ref: reference allele at the position
     :param alt: alternate allele at the position
     :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
     :param reads_list: read bases that at the position correspond to
-        either the Reference or Alternate allele 
+        either the Reference or Alternate allele
     :param other_list: read bases that at the position do not correspond to
-        neither the Reference nor Alternate allele 
+        neither the Reference nor Alternate allele
     :param ref_list: read bases that at the position do not correspond to
-        the Reference allele 
+        the Reference allele
     :param alt_list: read bases that at the position do not correspond to
-        Alternate allele 
+        Alternate allele
     :return: reads_list, read bases that at the position correspond to
-        either the Reference or Alternate allele 
+        either the Reference or Alternate allele
     :return: other_list, read bases that at the position do not correspond to
-        neither the Reference nor Alternate allele 
+        neither the Reference nor Alternate allele
     :return: ref_list, read bases that at the position do not correspond to
-        the Reference allele 
+        the Reference allele
     :return: alt_list: read bases that at the position do not correspond to
         Alternate allele
     """
@@ -143,7 +182,6 @@ def extract_lists(pileupcolumn: pysam.libcalignedsegment.PileupColumn,
     # For each read mapping to the PileupColumn position
     for pileupread in pileupcolumn.pileups:
         if not pileupread.is_del and not pileupread.is_refskip:
-
             # Uncomment if want to print the coverage at the position
             # print('\tbase in read %s = %s' %
             #       (pileupread.alignment.query_name,
@@ -152,10 +190,10 @@ def extract_lists(pileupcolumn: pysam.libcalignedsegment.PileupColumn,
             # I save the read name, the read base that map to the position,
             # and the base quality
             read_name = pileupread.alignment.query_name
-            base = pileupread.alignment.query_sequence[
-                pileupread.query_position]
+            base = pileupread.alignment.query_sequence[pileupread.query_position]
             quality = pileupread.alignment.query_alignment_qualities[
-                pileupread.query_position]
+                pileupread.query_position
+            ]
             read_length = pileupread.alignment.query_length
 
             read_info_list = [base, quality, read_name, read_length]
@@ -180,22 +218,25 @@ def extract_lists(pileupcolumn: pysam.libcalignedsegment.PileupColumn,
     return reads_list, other_list, ref_list, alt_list
 
 
-def calc_snps_posteriors(snp_list: list,
-                         bamvsref: pysam.libcalignmentfile.AlignmentFile,
-                         chrom: str, fasta_ref: pysam.libcfaidx.FastaFile,
-                         baq_snp: bool,
-                         adjustment_threshold: int, length_threshold: int,
-                         top4_snps_list: list) -> Tuple[
-    pd.DataFrame, float, float, float, dict]:
-    """ 
+def calc_snps_posteriors(
+    snp_list: list,
+    bamvsref: pysam.libcalignmentfile.AlignmentFile,
+    chrom: str,
+    fasta_ref: pysam.libcfaidx.FastaFile,
+    baq_snp: bool,
+    adjustment_threshold: int,
+    length_threshold: int,
+    top4_snps_list: list,
+) -> Tuple[pd.DataFrame, float, float, float, dict]:
+    """
     Calculate the Posterior Probabilities for each SNP, storing the
     information in a dataframe and saving the statistics relative to the
     total coverage on the SNPs and to the coverage of each of the 4 TOP SNPs
 
     :param snp_list: list of the SNPs
-    :param bamvsref: bam file 
+    :param bamvsref: bam file
     :param chrom: chromosome number of the position to extract
-    :param fasta_ref: Fasta File of the genome 
+    :param fasta_ref: Fasta File of the genome
     :param baq_snp: whether to perform BAQ (base alignment quality) calculation on the SNPs
     :param adjustment_threshold: adjust mapping quality.
     :param length_threshold: value to keep only reads with read length < length_threshold. Not used in the final script, i.e. it is set to 1000 so no filtering is performed
@@ -218,26 +259,27 @@ def calc_snps_posteriors(snp_list: list,
     coverage_ref, coverage_alt, coverage_other = 0, 0, 0
     dict_snps_cov = {}
 
-    # Iterate through each SNP 
+    # Iterate through each SNP
 
     for snp in snp_list:
-
         idx, coordinate, ref, alt, rsquared = snp[0:5]
         coordinate = int(coordinate)
 
         # 1 - Extract all the reads bases mapping to each snp
-        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref,
-                                                                     chrom,
-                                                                     coordinate,
-                                                                     ref, alt,
-                                                                     baq_snp,
-                                                                     fasta_ref,
-                                                                     adjustment_threshold,
-                                                                     length_threshold)
+        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(
+            bamvsref,
+            chrom,
+            coordinate,
+            ref,
+            alt,
+            baq_snp,
+            fasta_ref,
+            adjustment_threshold,
+            length_threshold,
+        )
 
         # 2 - Update SNPs coverage statistics
-        dict_snps_cov = coverage_dict(dict_snps_cov, idx, alt_list,
-                                      top4_snps_list)
+        dict_snps_cov = coverage_dict(dict_snps_cov, idx, alt_list, top4_snps_list)
 
         coverage_ref += len(ref_list)
         coverage_alt += len(alt_list)
@@ -247,7 +289,7 @@ def calc_snps_posteriors(snp_list: list,
         # Ref/Del (pD_RA), Del/Del (pD_AA)
         pD_RR, pD_RA, pD_AA = pD_G_(reads_list, ref, alt)
 
-        # 4 - Calculate p(D), i.e. denominator of the final equation. 
+        # 4 - Calculate p(D), i.e. denominator of the final equation.
         pD = pD_(pD_RR, pD_RA, pD_AA)
 
         # 5 - Calculate p(G|D), the posterior probability of each deletion
@@ -269,7 +311,7 @@ def calc_snps_posteriors(snp_list: list,
                 "n_alt_reads": 0,
                 "P(RR|D)": 0.33,
                 "P(RA|D)": 0.33,
-                "P(AA|D)": 0.33
+                "P(AA|D)": 0.33,
             }
         else:
             snp_result = {
@@ -284,7 +326,7 @@ def calc_snps_posteriors(snp_list: list,
                 "n_alt_reads": len(alt_list),
                 "P(RR|D)": pRR_D,
                 "P(RA|D)": pRA_D,
-                "P(AA|D)": pAA_D
+                "P(AA|D)": pAA_D,
             }
 
         # If there are reads with a base other than the REF or the ALT,
@@ -304,19 +346,20 @@ def calc_snps_posteriors(snp_list: list,
     return prob_df, coverage_ref, coverage_alt, coverage_other, dict_snps_cov
 
 
-def coverage_dict(dict_snps_cov: dict, snp_id: str, alt_list: list,
-                  top4_snps_list: List[str]) -> dict:
+def coverage_dict(
+    dict_snps_cov: dict, snp_id: str, alt_list: list, top4_snps_list: List[str]
+) -> dict:
     """
     Updates the dictionary counter "dict_snps_cov" with the number of reads
     overlapping the 4 TOP SNPs
 
-    :param dict_snps_cov: dict with the number of reads overlapping the 
+    :param dict_snps_cov: dict with the number of reads overlapping the
         4 TOP SNPs
     :param snp_id: SNP name
     :param alt_list: read bases that at the position do not correspond to
         Alternate allele
     :param top4_snps_list: list of the 4 top SNPs
-    :return: dict with the number of reads overlapping the 
+    :return: dict with the number of reads overlapping the
         4 TOP SNPs
 
     """
@@ -329,16 +372,24 @@ def coverage_dict(dict_snps_cov: dict, snp_id: str, alt_list: list,
 
 ############## Part B FUNCTIONS DECLARATION ##############
 
-def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
-                    chrom: str, position_list: list, adjustment_threshold: int,
-                    mapping_all, length_threshold: int, ol_threshold: int,
-                    sample: str,
-                    fasta_coll: pysam.libcfaidx.FastaFile,
-                    fasta_ref: pysam.libcfaidx.FastaFile, baq: bool,
-                    overlap_type: str,
-                    min_base_quality: int = 30,
-                    min_mapping_quality: int = 30, deletion_length=None) -> Tuple[
-    Union[dict, defaultdict], dict, dict, List[dict]]:
+
+def minimum_overlap(
+    bam_file: pysam.libcalignmentfile.AlignmentFile,
+    chrom: str,
+    position_list: list,
+    adjustment_threshold: int,
+    mapping_all,
+    length_threshold: int,
+    ol_threshold: int,
+    sample: str,
+    fasta_coll: pysam.libcfaidx.FastaFile,
+    fasta_ref: pysam.libcfaidx.FastaFile,
+    baq: bool,
+    overlap_type: str,
+    min_base_quality: int = 30,
+    min_mapping_quality: int = 30,
+    deletion_length=None,
+) -> Tuple[Union[dict, defaultdict], dict, dict, List[dict]]:
     """
     Function to calculate the minimum length that a read overlaps the: -
     Starting and Ending position of the 32deletion in the bam aligned
@@ -358,16 +409,16 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
     :param number of nucleotides with which each read needs to overlap the deletion or reference coordinates in order to be kept
     :sample: a SNP
     :fasta_coll: Fasta File of the genome with deletion
-    :fasta_ref: Fasta File of the genome 
+    :fasta_ref: Fasta File of the genome
     :param baq: base alignment quality filtering; string
     :param overlap_type: is it reference or deletion
-    :param min_base_quality: base quality; 
+    :param min_base_quality: base quality;
     :param min_mapping_quality: mapping quality
 
     :return: reads_dict: the dictionary containing reads with their minimum overlaps
     :return: lengths_dict: dictionary containing each read with its minimum length with which it overlaps the deletion or reference coordinates
     :return: mapping_all: a list of dicts with stored reseults
-    :return: nm_tags_dict: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the reference 
+    :return: nm_tags_dict: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the reference
              Needed for the function remove_overlaps, with which, if there are reads that overlap both the reference and the collapsed genome, I'll keep only the one that has the lowest number of mismatches and the highest overlapping length
     """
     lengths_dict = {}
@@ -381,53 +432,92 @@ def minimum_overlap(bam_file: pysam.libcalignmentfile.AlignmentFile,
 
         # For each coordinates couples
         for start_end in position_list:
-
             # For each of the S and E
             for pos in start_end:
-                pileupcolumns = get_pilecolumns(bam_file, baq, chrom,
-                                                min_base_quality,
-                                                adjustment_threshold,
-                                                min_mapping_quality,
-                                                fastafile=fasta_ref,
-                                                start=pos - 1, end=pos)
+                pileupcolumns = get_pilecolumns(
+                    bam_file,
+                    baq,
+                    chrom,
+                    min_base_quality,
+                    adjustment_threshold,
+                    min_mapping_quality,
+                    fastafile=fasta_ref,
+                    start=pos - 1,
+                    end=pos,
+                )
 
                 for pileupcolumn in pileupcolumns:
-                    reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(
-                        pileupcolumn, reads_dict, lengths_dict, mapping_all,
-                        nm_tags_dict, length_threshold, ol_threshold, sample,
-                        overlap_type, position_list=start_end, pos=pos,deletion_length=deletion_length)
+                    reads_dict, lengths_dict, mapping_all, nm_tags_dict = (
+                        min_over_reference_or_32del(
+                            pileupcolumn,
+                            reads_dict,
+                            lengths_dict,
+                            mapping_all,
+                            nm_tags_dict,
+                            length_threshold,
+                            ol_threshold,
+                            sample,
+                            overlap_type,
+                            position_list=start_end,
+                            pos=pos,
+                            deletion_length=deletion_length,
+                        )
+                    )
 
-    # If the list contains 1 element, i.e. P --> Bam aligned vs Collapsed Reference, 
+    # If the list contains 1 element, i.e. P --> Bam aligned vs Collapsed Reference,
     # to detect reads HAVING the deletion
     elif overlap_type == "del":
-
         reads_dict = {}
 
-        pileupcolumns = get_pilecolumns(bam_file, baq, chrom, min_base_quality,
-                                        adjustment_threshold,
-                                        min_mapping_quality,
-                                        fastafile=fasta_coll,
-                                        start=position_list[0] - 1,
-                                        end=position_list[0])
+        pileupcolumns = get_pilecolumns(
+            bam_file,
+            baq,
+            chrom,
+            min_base_quality,
+            adjustment_threshold,
+            min_mapping_quality,
+            fastafile=fasta_coll,
+            start=position_list[0] - 1,
+            end=position_list[0],
+        )
 
         for pileupcolumn in pileupcolumns:
-            reads_dict, lengths_dict, mapping_all, nm_tags_dict = min_over_reference_or_32del(
-                pileupcolumn, reads_dict, lengths_dict, mapping_all,
-                nm_tags_dict, length_threshold, ol_threshold, sample,
-                overlap_type, position_list=position_list, pos=None, deletion_length=deletion_length)
+            reads_dict, lengths_dict, mapping_all, nm_tags_dict = (
+                min_over_reference_or_32del(
+                    pileupcolumn,
+                    reads_dict,
+                    lengths_dict,
+                    mapping_all,
+                    nm_tags_dict,
+                    length_threshold,
+                    ol_threshold,
+                    sample,
+                    overlap_type,
+                    position_list=position_list,
+                    pos=None,
+                    deletion_length=deletion_length,
+                )
+            )
     else:
-        raise ValueError('selected overlap_type is not del or ref')
+        raise ValueError("selected overlap_type is not del or ref")
 
     return reads_dict, lengths_dict, mapping_all, nm_tags_dict
 
 
 def min_over_reference_or_32del(
-        pileupcolumn: pysam.libcalignedsegment.PileupColumn,
-        reads_dict: Union[dict, defaultdict], lengths_dict: dict,
-        mapping_all: List[dict], nm_tags_dict: dict, length_threshold: int,
-        ol_threshold: int, sample: str, overlap_type: str,
-        position_list: list, pos: Union[int, Any], deletion_length: int) -> Tuple[
-    Union[dict, defaultdict], dict, List[dict], dict]:
+    pileupcolumn: pysam.libcalignedsegment.PileupColumn,
+    reads_dict: Union[dict, defaultdict],
+    lengths_dict: dict,
+    mapping_all: List[dict],
+    nm_tags_dict: dict,
+    length_threshold: int,
+    ol_threshold: int,
+    sample: str,
+    overlap_type: str,
+    position_list: list,
+    pos: Union[int, Any],
+    deletion_length: int,
+) -> Tuple[Union[dict, defaultdict], dict, List[dict], dict]:
     """
     Function to extract each read from the pileupcolumn and calculate the the minimum overlapping length with which it maps to the Reference or to the
     Collapsed Reference, number of mismatches, read length, read sequence etc to save everything in a file
@@ -450,12 +540,9 @@ def min_over_reference_or_32del(
     :return: nm_tags_dict: dictionary containing each read with its Samtools NM tag, i.e. the count of mismatches between the read and the reference. See param spec of function minimum_overlap for more details
     """
 
-
     for pileupread in pileupcolumn.pileups:
-
         # If the read is not a deletion
         if not pileupread.is_del and not pileupread.is_refskip:
-
             read_name = pileupread.alignment.query_name
 
             # Position of the starting base of the read on the genome
@@ -476,8 +563,7 @@ def min_over_reference_or_32del(
 
             # Filter for only the reads under the threshold that I set (1000 bp, i.e. not filtering cause no read will be longer than 1000)
             if read_length <= length_threshold:
-
-                if overlap_type == 'ref':
+                if overlap_type == "ref":
                     S, E = position_list
                     if reference_start <= S and reference_end >= E:
                         # Minimum overlapping length is 32 for CCR5
@@ -492,7 +578,7 @@ def min_over_reference_or_32del(
                         min_over = min(left, right)
 
                 # I calculate the left and right overlaps of the read
-                elif overlap_type == 'del':
+                elif overlap_type == "del":
                     left = query_position
                     right = reference_end - position_list[0] + 1
 
@@ -504,9 +590,9 @@ def min_over_reference_or_32del(
                     # I append the minimum overlapping length to the reads
                     # dictionary in a list
 
-                    if overlap_type == 'ref':
+                    if overlap_type == "ref":
                         reads_dict[read_name].append(int(min_over))
-                    elif overlap_type == 'del':
+                    elif overlap_type == "del":
                         reads_dict[read_name] = int(min_over)
 
                     lengths_dict[read_name] = int(read_length)
@@ -521,14 +607,16 @@ def min_over_reference_or_32del(
                         "read_length": read_length,
                         "min_over": min_over,
                         "n_mismatches": nm_tag,
-                        "alignment": overlap_type
+                        "alignment": overlap_type,
                     }
                     mapping_all.append(row_to_add)
 
     return reads_dict, lengths_dict, mapping_all, nm_tags_dict
 
 
-def average_minimum_overlap(reads_dict: Union[dict, defaultdict], deletion_length: int) -> dict:
+def average_minimum_overlap(
+    reads_dict: Union[dict, defaultdict], deletion_length: int
+) -> dict:
     """
     Function to take the average of the minimum overlapping lengths over the
     4 different coordinates couples of the deletion.
@@ -543,15 +631,21 @@ def average_minimum_overlap(reads_dict: Union[dict, defaultdict], deletion_lengt
     # coordinate couple, set min_over to 32 Else, min_over will be calculate
     # as the average of the minimum overlaps for each coordinate couple
     return dict(
-        (k, deletion_length) if deletion_length in v else (k, mean(v)) for k, v in reads_dict.items())
+        (k, deletion_length) if deletion_length in v else (k, mean(v))
+        for k, v in reads_dict.items()
+    )
 
 
-def perfect_match_filtering(bamfile: pysam.libcalignmentfile.AlignmentFile,
-                  reads_dict: Union[dict, defaultdict], lengths_dict: int,
-                  chrom: str, start: int, end: int) -> Union[
-    dict, defaultdict]:
+def perfect_match_filtering(
+    bamfile: pysam.libcalignmentfile.AlignmentFile,
+    reads_dict: Union[dict, defaultdict],
+    lengths_dict: int,
+    chrom: str,
+    start: int,
+    end: int,
+) -> Union[dict, defaultdict]:
     """
-    Function to keep only the reads with the perfect matching 
+    Function to keep only the reads with the perfect matching
     :param bamfile: bam file
     :param reads_dict: the dictionary containing the reads with their
         minimum overlaps
@@ -565,11 +659,9 @@ def perfect_match_filtering(bamfile: pysam.libcalignmentfile.AlignmentFile,
 
     # For each read name in reads_dict:
     for key in reads_dict.keys():
-
         # For each read aligning in this region.
         # Each element of the list is a pysam.AlignmentSegment object
         for read in bamfile.fetch(chrom, start, end):
-
             # If the read from reads_dict is in the list AND does not have a
             # perfect match, I'll remove it from the dictionary
             if key == read.query_name and read.get_tag("NM") != 0:
@@ -579,13 +671,17 @@ def perfect_match_filtering(bamfile: pysam.libcalignmentfile.AlignmentFile,
     return reads_dict
 
 
-def snps_reporting(haplotype_list: List[str],
-                  bamvsref: pysam.libcalignmentfile.AlignmentFile, chrom: str,
-                  baq_snp: bool,
-                  adjustment_threshold: int, length_threshold: int,
-                  sample: str, fasta_ref: pysam.libcfaidx.FastaFile) -> Tuple[
-    List[dict], List[dict]]:
-    """ -> tuple[list[dict], list[dict]]
+def snps_reporting(
+    haplotype_list: List[str],
+    bamvsref: pysam.libcalignmentfile.AlignmentFile,
+    chrom: str,
+    baq_snp: bool,
+    adjustment_threshold: int,
+    length_threshold: int,
+    sample: str,
+    fasta_ref: pysam.libcfaidx.FastaFile,
+) -> Tuple[List[dict], List[dict]]:
+    """-> tuple[list[dict], list[dict]]
     Function to save the info about each SNP from the haplotype list. Not needed for HAPI, function created
     just to have the equivalent of what Kirstine was doing before I started to work on the project.
 
@@ -606,23 +702,31 @@ def snps_reporting(haplotype_list: List[str],
     # bases called for each SNP
     haplo_results_list, ref_haplo_count_list = [], []
     dict_snps = OrderedDict()
-    referencecount, purereferencecount, haplocount, purehaplocount, notavail = 0, 0, 0, 0, 0
+    referencecount, purereferencecount, haplocount, purehaplocount, notavail = (
+        0,
+        0,
+        0,
+        0,
+        0,
+    )
 
-    # Iterate through each SNP 
+    # Iterate through each SNP
     for snp in haplotype_list:
-
         idx, coordinate, ref, alt, rsquared = snp[0:5]
         coordinate = int(coordinate)
 
         # 1 - Extract all the reads bases mapping to each snp
-        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(bamvsref,
-                                                                     chrom,
-                                                                     coordinate,
-                                                                     ref, alt,
-                                                                     baq_snp,
-                                                                     fasta_ref,
-                                                                     adjustment_threshold,
-                                                                     length_threshold)
+        reads_list, other_list, ref_list, alt_list = extr_rbases_bam(
+            bamvsref,
+            chrom,
+            coordinate,
+            ref,
+            alt,
+            baq_snp,
+            fasta_ref,
+            adjustment_threshold,
+            length_threshold,
+        )
 
         # 2 - Calculate the number of reference and alternate bases called
         # for each SNP
@@ -651,7 +755,6 @@ def snps_reporting(haplotype_list: List[str],
             dict_snps[idx + "_alt"] = [math.nan]
 
         else:
-
             dict_snps[idx + "_ref"] = [ref_bases_n]
             dict_snps[idx + "_alt"] = [alt_bases_n]
 
@@ -661,7 +764,7 @@ def snps_reporting(haplotype_list: List[str],
         "purereferencecount": [purereferencecount],
         "haplocount": [haplocount],
         "purehaplocount": [purehaplocount],
-        "notavail": [notavail]
+        "notavail": [notavail],
     }
 
     haplo_results_list.append(dict_snps)
@@ -670,12 +773,15 @@ def snps_reporting(haplotype_list: List[str],
     return haplo_results_list, ref_haplo_count_list
 
 
-def remove_overlaps(reads_dict_del: dict, reads_dict_ref: dict,
-                    nm_tags_dict_del: dict,
-                    nm_tags_dict_ref: dict, lengths_dict_ref: dict,
-                    lengths_dict_del: dict) -> Tuple[
-    dict, dict, dict, dict, dict, dict, int]:
-    """ 
+def remove_overlaps(
+    reads_dict_del: dict,
+    reads_dict_ref: dict,
+    nm_tags_dict_del: dict,
+    nm_tags_dict_ref: dict,
+    lengths_dict_ref: dict,
+    lengths_dict_del: dict,
+) -> Tuple[dict, dict, dict, dict, dict, dict, int]:
+    """
     In case there are reads that overlap both the reference and the Collapsed genome, I'll keep only the one that has the lowest
     number of mismatches and the highest overlapping length
     :param reads_dict_del: dictionary containing each read mapping to the Collapsed genome
@@ -688,24 +794,20 @@ def remove_overlaps(reads_dict_del: dict, reads_dict_ref: dict,
     n_reads_mapping_both = 0
 
     for key in list(reads_dict_del.keys()):
-
         if key in reads_dict_ref:
             n_reads_mapping_both += 1
 
             # If the read vs del has a lower number of mismatches than the
             # read vs ref
             if nm_tags_dict_del[key] < nm_tags_dict_ref[key]:
-
                 # Assign the read to del, i.e. remove the read vs ref from
                 # its dictionary
                 del reads_dict_ref[key]
                 del lengths_dict_ref[key]
 
-
             # If the read vs del has a higher number of mismatches than the
             # read vs ref
             elif nm_tags_dict_del[key] > nm_tags_dict_ref[key]:
-
                 # Assign the read to ref, i.e. remove the read vs del from
                 # its dictionary
                 del reads_dict_del[key]
@@ -713,29 +815,32 @@ def remove_overlaps(reads_dict_del: dict, reads_dict_ref: dict,
 
             # If the number of mismatches is the same among the two:
             else:
-
                 # If the overlapping length of the read vs del is lower than
                 # the one of the read vs ref:
                 if reads_dict_del[key] < reads_dict_ref[key]:
-
                     # Assign the read to ref, i.e. remove the read vs del
                     # from its dictionary
                     del reads_dict_del[key]
                     del lengths_dict_del[key]
 
                 elif reads_dict_ref[key] < reads_dict_del[key]:
-
                     del reads_dict_ref[key]
                     del lengths_dict_ref[key]
 
                 # If also this is the same, remove from both of them
                 else:
-
                     del reads_dict_ref[key]
                     del lengths_dict_ref[key]
 
                     del reads_dict_del[key]
                     del lengths_dict_del[key]
 
-    return (reads_dict_del, reads_dict_ref, nm_tags_dict_del, nm_tags_dict_ref,
-            lengths_dict_ref, lengths_dict_del, n_reads_mapping_both)
+    return (
+        reads_dict_del,
+        reads_dict_ref,
+        nm_tags_dict_del,
+        nm_tags_dict_ref,
+        lengths_dict_ref,
+        lengths_dict_del,
+        n_reads_mapping_both,
+    )
