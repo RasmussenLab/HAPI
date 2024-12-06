@@ -3,7 +3,7 @@ A) CEU rs333 haplotype probability calculation
 
 For each SNP of the snp_file, I extract the pileup of their position and
 calculate the probability of each possible genotype (Ref/Ref, Ref/Alt, Alt/Alt)
-given the data, i.e. p(G|D), where:
+given the data, i.e. p(G|D), where: #
 - G stands for Genotype of the alleles
 - D stands for Data.
 
@@ -70,33 +70,73 @@ from hapi.utils.mappings_helpers import (
     snps_reporting,
     remove_overlaps
 )
+from typing import List
+
+class YamlReader:
+
+    def __init__(self, file_path: str) -> None:
+        import yaml
+        with open(file_path, "r") as f:
+            self.yaml_loader = yaml.safe_load(f)
+
+    @property
+    def position_list_reference(self) -> List[List[int]]:
+        return self.yaml_loader["position_list_reference"]
+
+    @property
+    def position_list_deletion(self) -> list:
+        return [self.yaml_loader["position_list_deletion"]]
+
+    @property
+    def top4_snps_list(self) -> list:
+        return self.yaml_loader["top4_snps_list"]
+
+    @property
+    def chromosome(self) -> str:
+        return str(self.yaml_loader["chromosome"])
+
+    @property
+    def deletion_length(self) -> int:
+        return int(self.yaml_loader["deletion_length"])
 
 
 ############## Execution #################
-
 def main():
     ### Specifically for project used variable values ###
     # Lists containing the positions to check for overlapping reads
     # N.B. the CCR5delta32 deletion (rs333) has 4 different coordinate representations
     # (see https://varsome.com/variant/hg19/rs333?annotation-mode=germline)
-    position_list_reference = [[46414944, 46414975], [46414945, 46414976],
-                               [46414946, 46414977], [46414947, 46414978]]
-    position_list_deletion = [46414943]
+    import os
+    print(os.getcwd())
 
-    top4_snps_list = ["rs113341849", "rs113010081", "rs11574435", "rs79815064"]
-    chrom = str(3)
-    fetch_start = 46414943
-    fetch_end = 46414980
+    # Get script arguments
+    parser = create_parser()
+    args = parser.parse_args()
+    write_settings(args)
+
+    yaml_reader = YamlReader(args.config)
+    position_list_reference = yaml_reader.position_list_reference
+    position_list_deletion = yaml_reader.position_list_deletion
+    top4_snps_list = yaml_reader.top4_snps_list
+    chrom = yaml_reader.chromosome  # str(3)
+    deletion_length = yaml_reader.deletion_length
+
+    # if len(position_list_reference) == 1:
+    #     overlapping_length_threshold = 2
+    # else:
+    #     overlapping_length_threshold = len(position_list_reference) + 2
+    overlapping_length_threshold = 6
+    print(overlapping_length_threshold)
+
+    # TODO change this part -- not relevant as long as perfect math is off
+    # fetch_start = 46414943
+    # fetch_end = 46414980
 
     ### Starting the script ###
 
     # Start time initiation
     start = time()
 
-    # Get script arguments
-    parser = create_parser()
-    args = parser.parse_args()
-    write_settings(args)
 
     # Output folder
     results_filepath = args.output_folder / "results.tsv"
@@ -108,10 +148,9 @@ def main():
     header, header_del, header_ref = True, True, True
     if args.haplotype_file:
         header_hapl, header_hapl_c = True, True
-        haplotype_list = snp_haplo_list(args.haplotype)
+        haplotype_list = snp_haplo_list(args.haplotype_file) # TODO is changed
     # Open the samples list
     samples_list = args.samples_file.read().splitlines()
-
     # For each sample to analyse
     for sample in samples_list:
         print(sample)
@@ -126,10 +165,10 @@ def main():
             # I report all the SNPs called of the haplotype
             (haplo_results,
              ref_haplo_count) = snps_reporting(haplotype_list, bamvsref,
-                                              chrom, args.baq_snps,
-                                              args.adjustment_threshold,
-                                              args.length_threshold,
-                                              sample, fasta_ref)
+                                               chrom, args.baq_snps,
+                                               args.adjustment_threshold,
+                                               args.length_threshold,
+                                               sample, fasta_ref)
 
         ### Part A: Prior Probability calculated as joint probability of top 4
         # SNPs' posterior probabilities - Execution
@@ -173,57 +212,58 @@ def main():
         # the dataframe df_mapping_all I put all the reads mapping, so both
         # those that map vs reference and those that map vs collapsed
         (reads_dict_ref, lengths_dict_ref, mapping_all,
-         nm_tags_dict_ref) = minimum_overlap(bamvsref, "3",
+         nm_tags_dict_ref) = minimum_overlap(bamvsref, chrom,
                                              position_list_reference,
                                              args.adjustment_threshold,
                                              mapping_all,
                                              args.length_threshold,
-                                             args.overlapping_length_threshold,
+                                             overlapping_length_threshold,
                                              sample,
                                              fasta_coll,
                                              fasta_ref,
                                              baq=args.baq_deletion,
-                                             overlap_type="ref")
+                                             overlap_type="ref", deletion_length=deletion_length)
 
         (reads_dict_del, lengths_dict_del, mapping_all,
-         nm_tags_dict_del) = minimum_overlap(bamvsdel, "3",
+         nm_tags_dict_del) = minimum_overlap(bamvsdel, chrom,
                                              position_list_deletion,
                                              args.adjustment_threshold,
                                              mapping_all,
                                              args.length_threshold,
-                                             args.overlapping_length_threshold,
+                                             overlapping_length_threshold,
                                              sample,
                                              fasta_coll,
                                              fasta_ref,
                                              baq=args.baq_deletion,
-                                             overlap_type="del")
+                                             overlap_type="del", deletion_length=deletion_length)
 
         # 2 - Average of the overlapping lengths of all the 4 coordinates
         # couples in the bam vs GRCh37
-        reads_dict_ref = average_minimum_overlap(reads_dict_ref)
+        reads_dict_ref = average_minimum_overlap(reads_dict_ref, deletion_length)
 
         # In case there are reads that overlap both the reference and the
         # collapsed genome, I'll keep only the one that has the lowest
         # number of mismatches and the highest overlapping length
         (reads_dict_del, reads_dict_ref, nm_tags_dict_del,
          nm_tags_dict_ref, lengths_dict_ref, lengths_dict_del,
-         n_reads_mapping_both) = remove_overlaps(reads_dict_del, 
-                                                 reads_dict_ref, 
+         n_reads_mapping_both) = remove_overlaps(reads_dict_del,
+                                                 reads_dict_ref,
                                                  nm_tags_dict_del,
-                                                 nm_tags_dict_ref, 
-                                                 lengths_dict_ref, 
+                                                 nm_tags_dict_ref,
+                                                 lengths_dict_ref,
                                                  lengths_dict_del)
 
         # 3 - Filter by the XM:i:0 tag --> keep only the perfect matching reads
 
         if args.perfect_match:
+            raise NotImplementedError("Not implemented for other deletions than ccr5")
             reads_dict_ref = perfect_match_filtering(bamvsref, reads_dict_ref,
-                                           lengths_dict_ref, chrom,
-                                           fetch_start, fetch_end)
+                                                     lengths_dict_ref, chrom,
+                                                     fetch_start, fetch_end)
 
             reads_dict_del = perfect_match_filtering(bamvsdel, reads_dict_del,
-                                           lengths_dict_del, chrom,
-                                           fetch_start, fetch_end)
+                                                     lengths_dict_del, chrom,
+                                                     fetch_start, fetch_end)
 
         # 4 - Convert the dicts to lists, so it's easier to write in the
         # output file
@@ -330,18 +370,19 @@ def main():
 
     if not df_mapping_all.empty:
 
-    # I need to average the overlapping lengths of the ref
+        # I need to average the overlapping lengths of the ref
         df_mapping_all = averaging_df_column(df_mapping_all,
-                                            cols_to_group=["sample",
+                                             cols_to_group=["sample",
                                                             "read_name",
                                                             "alignment"],
-                                            avg_df_column="min_over")
+                                             avg_df_column="min_over")
 
         df_mapping_all.to_csv(args.output_folder / "all_reads_mapping.tsv",
-                            sep="\t", quoting=csv.QUOTE_NONE, index=False)
+                              sep="\t", quoting=csv.QUOTE_NONE, index=False)
 
     else:
-        print("There dataframe df_mapping_all, which should contain all the reads mapping to both reference and collapsed genome, is empty.\nThis means that no individuals in your list of samples have reads mapping to the deletion region.\nThis could happen when one tries e.g. to run the script only on one low coverage sample.")
+        print(
+            "There dataframe df_mapping_all, which should contain all the reads mapping to both reference and collapsed genome, is empty.\nThis means that no individuals in your list of samples have reads mapping to the deletion region.\nThis could happen when one tries e.g. to run the script only on one low coverage sample.")
         pass
     end = time()
     length = end - start
@@ -350,3 +391,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    # # test that it outputs the same
+    # import subprocess as sb
+    #
+    # out = sb.run(["diff results/results.tsv resultstrue"], shell=True, stdout=sb.PIPE)
+    # print(str(out.stdout))
+    # assert (out.stdout == b'')
