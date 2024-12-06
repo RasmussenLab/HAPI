@@ -1,3 +1,6 @@
+from typing import List
+
+
 class YamlReader:
     def __init__(self, file_path: str) -> None:
         import yaml
