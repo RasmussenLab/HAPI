@@ -5,6 +5,7 @@ src/hapi_pyth.egg-info/
 src/hapi/__pycache__/
 src/hapi/conf/__pycache__/
 src/hapi/utils/__pycache__/
+src/hapi/test
 
 # results 
 results/

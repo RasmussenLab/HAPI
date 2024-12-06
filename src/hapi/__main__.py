@@ -91,7 +91,7 @@ def main():
     position_list_reference = yaml_reader.position_list_reference
     position_list_deletion = yaml_reader.position_list_deletion
     top4_snps_list = yaml_reader.top4_snps_list
-    chrom = yaml_reader.chromosome  # str(3)
+    chrom = yaml_reader.chromosome
     deletion_length = yaml_reader.deletion_length
 
     overlapping_length_threshold = 6
