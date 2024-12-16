@@ -73,4 +73,6 @@ The file `reads_assigned_ref.tsv` and `reads_assigned_del.tsv` contain the list 
 
 The folder `prob_dfs` contains, for each sample, the calls of each of the top 4 variants, together with how many calls, and the values of the probabilities for each variant
 
+Running HAPI with different deletions can be done by preparing a file with the deletion information and passing it to the `--config` argument. For examples of the structure of this file see the `config` folder.
+
 For more details about HAPI, please refer to the pre-print references above.
