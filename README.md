@@ -29,7 +29,7 @@ hapi-pyth \
 --snps-file top_4_snps.txt \
 --length-threshold 1000
 --output-folder results
---config config/rs369842709.config
+--config config/ccr5.config
 
 # The option --length-threshold X can be used to keep only the reads shorter than the X value. Here we don't do any filter and we set to 1000. Since all reads are shorter than 1000, no read will be filtered out.
 ```
