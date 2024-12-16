@@ -27,8 +27,8 @@ hapi-pyth \
 --fasta-ref-file references/hs.build37.1.fa \
 --fasta-coll-file references/ceuhaplo_collapsed.hs.build37.1.fa \
 --snps-file top_4_snps.txt \
---length-threshold 1000
---output-folder results
+--length-threshold 1000 \
+--output-folder results \
 --config config/ccr5.config
 
 # The option --length-threshold X can be used to keep only the reads shorter than the X value. Here we don't do any filter and we set to 1000. Since all reads are shorter than 1000, no read will be filtered out.
