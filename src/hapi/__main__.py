@@ -376,10 +376,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    # # test that it outputs the same
-    # import subprocess as sb
-    #
-    # out = sb.run(["diff results/results.tsv resultstrue"], shell=True, stdout=sb.PIPE)
-    # print(str(out.stdout))
-    # assert (out.stdout == b'')
