@@ -39,6 +39,7 @@ import csv
 from itertools import chain
 from time import time
 import warnings
+from pathlib import Path
 
 warnings.filterwarnings(action="ignore", category=UserWarning)
 
@@ -85,6 +86,7 @@ def main():
     # Get script arguments
     parser = create_parser()
     args = parser.parse_args()
+    Path(args.output_folder).mkdir(exist_ok=True, parents=True)
     write_settings(args)
 
     yaml_reader = YamlReader(args.config)
@@ -105,7 +107,7 @@ def main():
     results_filepath = args.output_folder / "results.tsv"
     outdir = args.output_folder / "prob_dfs/"
     outdir.mkdir(exist_ok=True, parents=True)
-    results_filepath.mkdir(exist_ok=True, parents=True)
+    # results_filepath.mkdir(exist_ok=True, parents=True)
 
     # Initialize empty list and header assignments
     mapping_all = []
