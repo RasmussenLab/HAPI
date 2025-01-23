@@ -35,6 +35,7 @@ hapi-pyth \
 ```
 
 HAPI will output several files in the results folder. The most important file is `results.tsv`, which is a table containing the prediction for each sample run.
+
 ```
 * Sample: sample ID
 * pRR_Data_n: Posterior probability of a sample being homozygous for the reference sequence, given the Data
@@ -67,7 +68,7 @@ HAPI will output several files in the results folder. The most important file is
 
 The file `settings.tsv` contains the options used when the HAPI analysis got run, and is useful for reproducibility purposes
 
-The file `all_reads_mapping.tsv` contain all the reads mapping to either the canonical and the collapsed reference. 
+The file `all_reads_mapping.tsv` contain all the reads mapping to either the canonical and the collapsed reference.
 
 The file `reads_assigned_ref.tsv` and `reads_assigned_del.tsv` contain the list of reads assigned to the canonical and collapsed reference, respectively, according to the minimum overlapping length option. This means that these two files will contain less reads than the previous one, i.e. only those that were assigned to the references, not merely all the reads mapping.
 
@@ -76,3 +77,5 @@ The folder `prob_dfs` contains, for each sample, the calls of each of the top 4 
 Running HAPI with different deletions can be done by preparing a file with the deletion information and passing it to the `--config` argument. For examples of the structure of this file see the `config` folder.
 
 For more details about HAPI, please refer to the pre-print references above.
+
+After running HAPI on the CCR5delta32 and the 7 control deletions (see paper for more details), we used custom scripts to furhter processing the results. These can be found in the folder `process_ccr5delta32_and_control_deletions` and can be run with the script `launcher.sh`. The output files, with format rsID_E.xlsx, contain the final results as shown in the supplementary data of the paper.
