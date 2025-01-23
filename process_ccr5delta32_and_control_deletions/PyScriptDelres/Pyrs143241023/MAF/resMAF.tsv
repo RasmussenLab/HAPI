@@ -1,0 +1,13 @@
+Data Group	Filter Type	RR	RD	DD	Total Samples	Total Alleles	MAF
+VK	No_filter	226	48	5	279	558	0.0950
+VK	Permissive_filter	241	37	1	279	558	0.0681
+VK	Strict_filter	246	32	1	279	558	0.0591
+RISE	No_filter	25	5	0	30	60	0.0833
+RISE	Permissive_filter	26	4	0	30	60	0.0667
+RISE	Strict_filter	27	3	0	30	60	0.0500
+NEO	No_filter	102	32	1	135	270	0.1222
+NEO	Permissive_filter	107	27	1	135	270	0.1037
+NEO	Strict_filter	112	22	1	135	270	0.0852
+BOTAI	No_filter	38	10	0	48	96	0.1042
+BOTAI	Permissive_filter	39	9	0	48	96	0.0938
+BOTAI	Strict_filter	43	5	0	48	96	0.0521

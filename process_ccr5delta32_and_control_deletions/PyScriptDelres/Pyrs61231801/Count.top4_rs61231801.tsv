@@ -1,0 +1,44 @@
+Data Group: VK
+Total samples: 237
+No_filter - RR count: 192
+No_filter - RD count: 40
+No_filter - DD count: 5
+Permissive_filter - RR count: 198
+Permissive_filter - RD count: 35
+Permissive_filter - DD count: 4
+Strict_filter - RR count: 203
+Strict_filter - RD count: 30
+Strict_filter - DD count: 4
+Data Group: RISE
+Total samples: 40
+No_filter - RR count: 28
+No_filter - RD count: 12
+No_filter - DD count: 0
+Permissive_filter - RR count: 31
+Permissive_filter - RD count: 9
+Permissive_filter - DD count: 0
+Strict_filter - RR count: 34
+Strict_filter - RD count: 6
+Strict_filter - DD count: 0
+Data Group: NEO
+Total samples: 137
+No_filter - RR count: 104
+No_filter - RD count: 26
+No_filter - DD count: 7
+Permissive_filter - RR count: 108
+Permissive_filter - RD count: 24
+Permissive_filter - DD count: 5
+Strict_filter - RR count: 117
+Strict_filter - RD count: 19
+Strict_filter - DD count: 1
+Data Group: BOTAI
+Total samples: 47
+No_filter - RR count: 43
+No_filter - RD count: 4
+No_filter - DD count: 0
+Permissive_filter - RR count: 44
+Permissive_filter - RD count: 3
+Permissive_filter - DD count: 0
+Strict_filter - RR count: 44
+Strict_filter - RD count: 3
+Strict_filter - DD count: 0

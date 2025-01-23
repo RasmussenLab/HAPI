@@ -1,0 +1,4 @@
+Filter Type	RR	RD	DD	Total Samples	Total Alleles	MAF
+No_filter	124	10	0	134	268	0.0373
+Permissive_filter	127	7	0	134	268	0.0261
+Strict_filter	132	2	0	134	268	0.0075
