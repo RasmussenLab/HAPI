@@ -1,6 +1,6 @@
 # HAPI
 
-Instructions to run HAPI (Haplotype-Aware Probabilistic model for Indels) to identify the CCR5delta32 deletion in ancient low coverage DNA samples, as published in the pre-print:
+Instructions to run HAPI (Haplotype-Aware Probabilistic model for Indels) to identify the CCR5delta32 deletion in ancient low coverage DNA samples, as published in Cell:
 
 ```
 Kirstine Ravn*, Leonardo Cobuccio*, Rasa Audange Muktupavela*, Jonas Meisner, Lasse Schnell Danielsen, Michael Eriksen Benros,
