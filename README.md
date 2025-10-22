@@ -3,9 +3,10 @@
 Instructions to run HAPI (Haplotype-Aware Probabilistic model for Indels) to identify the CCR5delta32 deletion in ancient low coverage DNA samples, as published in the pre-print:
 
 ```
-Tracing the evolutionary path of the CCR5delta32 deletion via ancient and modern genomes
-Kirstine Ravn, Leonardo Cobuccio, Rasa Audange Muktupavela, Jonas Meisner, Michael Eriksen Benros, Thorfinn Sand Korneliussen, Martin Sikora, Eske Willerslev, Morten E. Allentoft, Evan K. Irving-Pease, Fernando Racimo, Simon Rasmussen
-medRxiv 2023.06.15.23290026; doi: https://doi.org/10.1101/2023.06.15.23290026
+Kirstine Ravn*, Leonardo Cobuccio*, Rasa Audange Muktupavela*, Jonas Meisner, Lasse Schnell Danielsen, Michael Eriksen Benros,
+Thorfinn Sand Korneliussen, Martin Sikora, Eske Willerslev, Morten E. Allentoft, Evan K. Irving-Pease, Simon Rasmussen.
+Tracing the evolutionary history of the CCR5delta32 deletion via ancient and modern genomes. Cell S0092867425004179 (2025) doi:10.1016/j.cell.2025.04.015.
+* Shared first authors
 ```
 
 The software is available on [pip](https://pypi.org/project/hapi-pyth/) and the github repo is available [here](https://github.com/RasmussenLab/HAPI/tree/main).
